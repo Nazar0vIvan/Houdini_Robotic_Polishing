@@ -33,13 +33,31 @@ profiles = get_raw_blade_data("../blade_data.json")
 # x = np.linspace(min(x), max(x), num = 50)
 # plot(x, spl(x))
 
+z = []
+for profile in profiles.values():
+    z.append(profile["z"])
 
-for i in range(5):
-    z = []; y = []
+n = len(profiles["0"]["convex"])
+for i in range(n):
+    y = []
     for profile in profiles.values():
         y.append(profile.get("convex")[i][1])
-        z.append(profile["z"])
+    x, y_new = lstsq(z, y)
+    for (profile, y) in zip(profiles.values(), y_new):
+        profile["convex"][i][1] = y
+
+    # plt.plot(xs, ys, 'o-', linewidth = 1)
+    # plt.plot(z, y, 'o-', linewidth = 1)
+
+# with open("blade_ruled_surface.json", 'w') as file:
+#     json.dump(profiles, file)
+
+for i in range(n):
+    y = []
+    for profile in profiles.values():
+        y.append(profile.get("convex")[i][1])
     plt.plot(z, y, '-', linewidth=1)
+    plt.grid(True)
 
 plt.show()
 
