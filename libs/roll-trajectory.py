@@ -57,6 +57,29 @@ for i in range(n):
         profile["concave"][i][0] = x2
         profile["concave"][i][1] = y2
 
+
+def update_trans_matrices(kwargs,assetNode):
+    geo = assetNode.node("convex_and_concave").geometry()    
+    frene_frames = {}
+    for i in range(npr0, npr1, 2): # convex - четные; concave - нечетные
+        prevProfilePoints = geo.prims()[i-2].points()
+        curProfilePoints = geo.prims()[i].points()
+        nextProfilePoints = geo.prims()[i+2].points()
+        trans_matrices["convex"][str(i)] = [] # matrices Bi -> B
+        npt1 = len(curProfilePoints)-1 if npt1 > len(curProfilePoints)-1 else npt1
+        for j in range(npt0, npt1):
+            p = curProfilePoints[j]
+            u1 = curProfilePoints[j-1]
+            u2 = curProfilePoints[j+1]
+            v1 = prevProfilePoints[j]
+            v2 = nextProfilePoints[j]
+            freneFrame = getFreneFrame(u1,u2,v1,v2,p)        
+            origin = np.array([[p.position().x()],[p.position().y()],[p.position().z()]])
+            AiB_c = np.append(freneFrame, origin, axis = 1)
+            AiB_c = np.vstack((AiB_c, np.array([0,0,0,1])))
+            AiBs_c["convex"][str(i)].append(AiB_c.tolB_c.tolist())
+    assetNode.parm("AiBs_c").set(json.dumps(AiBs_c))
+
 # save_blade_data("new_blade_data.json")
 
 # spl = scipy.interpolate.CubicSpline(x, y)
