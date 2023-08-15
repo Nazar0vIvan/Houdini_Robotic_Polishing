@@ -7,5 +7,6 @@ struct Frene {
 struct Circle {
     float xc;
     float yc;
+		float zc;
     float R;
 }
