@@ -1,12 +1,8 @@
 struct Frene {
-    vector t;
-    vector b;
-    vector n;
+    vector t, b, n;
 }
 
 struct Circle {
-    float xc;
-    float yc;
-		float zc;
-    float R;
+    float xc, yc, zc, R;
+		vector2 clipline;
 }
