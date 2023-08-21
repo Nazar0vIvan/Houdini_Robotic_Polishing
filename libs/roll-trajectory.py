@@ -30,9 +30,7 @@ def lstsq(x, y):
 def save_blade_data(file_name):
     with open(file_name, 'w') as file:
         json.dump(profiles, file)
-    file.close()
 
-'''
 profiles = get_raw_blade_data("../blade_data.json")
 
 z = []
@@ -56,25 +54,24 @@ for i in range(n):
         profile["convex"][i][1] = y1
         profile["concave"][i][0] = x2
         profile["concave"][i][1] = y2
-'''
 
-profiles = get_raw_blade_data("../new_blade_data.json")
+# profiles = get_raw_blade_data("../blade_data.json")
 
 for profile in profiles.values():
     x = []; y = []
     for point in profile["convex"]:
         x.append(point[0])
         y.append(point[1])
-    profile["convex"] = {}
-    profile["convex"]["x"] = x
-    profile["convex"]["y"] = y
+    profile["x_cx"] = x
+    profile["y_cx"] = y
+    del profile["convex"]
     x = []; y = []
     for point in profile["concave"]:
         x.append(point[0])
         y.append(point[1])
-    profile["concave"] = {}
-    profile["concave"]["x"] = x
-    profile["concave"]["y"] = y
+    profile["x_cv"] = x
+    profile["y_cv"] = y
+    del profile["concave"]
 
 save_blade_data("new_blade_data_newformat.json")
 
