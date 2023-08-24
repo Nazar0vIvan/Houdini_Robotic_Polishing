@@ -12,7 +12,7 @@ function vector4 plane(vector pt1; vector pt2; vector pt3) {
 		float x2 = pt2[0]; float y2 = pt2[1]; float z2 = pt2[2];
     float x3 = pt3[0]; float y3 = pt3[1]; float z3 = pt3[2];
     
-    float A = determinant(set(1,y2,z2,1,y1,z1,1,y2,z2));
+    float A = determinant(set(1,y2,z2,1,y1,z1,1,y3,z3));
     float B = determinant(set(x2,1,z2,x1,1,z1,x3,1,z3));
     float C = determinant(set(x2,y2,1,x1,y1,1,x3,y3,1));
     float D = -determinant(set(x2,y2,z2,x1,y1,z1,x3,y3,z3));
