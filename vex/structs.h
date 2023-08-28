@@ -2,9 +2,10 @@ struct Frene {
     vector t, b, n;
 }
 
-struct Circle {
+struct EdgeCirc {
     float xc, yc, zc, R;
-		vector2 clipline;
+		vector2 clipline1;
+		vector2 clipline2;
 }
 
 struct Cone {
