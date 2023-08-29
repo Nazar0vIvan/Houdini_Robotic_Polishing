@@ -20,12 +20,13 @@ function vector4 plane(vector pt1; vector pt2; vector pt3) {
     return set(A,B,C,D);
 }
 
-function vector pts2vector(vector pt1; vector pt2) {
-    // v = {v1, v1, v3} - направляющий вектор прямой
-    float vx = pt2[0] - pt1[0];
-    float vy = pt2[1] - pt1[1];
-    float vz = pt2[2] - pt1[2];
-    return set(vx,vy,vz);
+function vector circ(vector pt1; vector pt2; vector pt3){
+    float x1 = pt1[0]; float x2 = pt2[0]; float x3 = pt3[0];
+    float y1 = pt1[1]; float y2 = pt2[1]; float y3 = pt3[1];
+    float xc = -0.5*(y1*(x2*x2+y2*y2-x3*x3-y3*y3)+y2*(x3*x3+y3*y3-x1*x1-y1*y1)+y3*(x1*x1+y1*y1-x2*x2-y2*y2))/(x1*(y2-y3)+x2*(y3-y1)+x3*(y1-y2));
+    float yc = 0.5*(x1*(x2*x2+y2*y2-x3*x3-y3*y3)+x2*(x3*x3+y3*y3-x1*x1-y1*y1)+x3*(x1*x1+y1*y1-x2*x2-y2*y2))/(x1*(y2-y3)+x2*(y3-y1)+x3*(y1-y2));
+    float r = sqrt((x1-xc)*(x1-xc) + (y1-yc)*(y1-yc));
+    return set(xc, yc, r);
 }
 
 function vector2 linsolve(float x1; float x2; float y1; float y2) {
