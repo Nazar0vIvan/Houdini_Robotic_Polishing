@@ -10,9 +10,8 @@ function int[] addpoints_radius_cxcv(int ptnum; float r; int npts; int ptnums[];
     pt2 = point(0, "P", ptnums[i]);
     pt3 = point(0, "P", ptnums[i+1]);
     pt4 = point(0, "P", first_pf_ptnums[ptnum]); 
-    
-    matrix3 RT = transpose(R);
 
+    matrix3 RT = transpose(R);
     vector pt0 = ptnum == 0 ? pt1 : ptnum == 1 ? pt3 : pt2 // target point
      // y axis of attached coor sys
     vector uvy = get_uvy(RT*pt1, RT*pt2, RT*pt3, RT*pt0);
@@ -23,12 +22,7 @@ function int[] addpoints_radius_cxcv(int ptnum; float r; int npts; int ptnums[];
     vector uvz = cross(uvx, uvy);
     // transformation matrix
     matrix T = get_transform(uvx, uvy, uvz, pt_target);
-    
-    matrix TI = invert(T);
-    vector4 pt0T = TI*set(pt0[0], pt0[1], pt0[2], 1.0);
-    vector4 pt4T = TI*set(pt4[0], pt4[1], pt4[2], 1.0);
-    linsolve(pt0T[1], pt4T[1], pt0T[2], pt4T[2])
-    vector4 circ = get_radius_circ(pt0, pt4, r, T);
+    vector4 circ = get_radius_circ(pt1, pt2, r, T);
 
     push(ptnums, addpoints_radius_sector(circ, T, npts));
     
@@ -42,18 +36,16 @@ function int[] addpoints_radius_edge(int ptnum; float r; int npts; int ptnums[];
     vector pt0 = point(0, "P", ptnums[0]);
     vector ptm = point(0, "P", ptnums[floor(n/2)]);
     vector ptn = point(0, "P", ptnums[n-1]);
-    
-    vector edge_circ = circ(RT*pt0, RT*ptm, RT*ptn);
-    vector ptc = R*set(edge_circ[0], edge_circ[1], 0.);
-    vector pt1, pt2;
-    
-    pt1 = point(0, "P", ptnums[i]);
-    pt2 = point(0, "P", first_pf_ptnums[i]); 
+
+    vector pt1 = point(0, "P", ptnums[ptnum]);
+    vector pt2 = point(0, "P", first_pf_ptnums[ptnum]); 
     // y axis of attached coor sys
+    vector edge_circ = circ(RT*pt0, RT*ptm, RT*ptn);
+    vector ptc = R*set(edge_circ[0], edge_circ[1], 0.); // circ center in 0 coor sys
     vector uvy = get_uvy(pt1, ptc);
     // x axis of attached coor sys 
     vector uvx = get_uvx(pt1 + uvy, pt1, pt2);
-    // z axis of attached cs
+    // z axis of attached coor sys 
     vector uvz = cross(uvx, uvy);
     
     matrix T = get_transform(uvx, uvy, uvz, pt1);
@@ -90,7 +82,8 @@ function matrix get_transform(vector uvx; vector uvy; vector uvz; vector pt) {
                pt2[0], pt2[1], pt2[2], 1.);
 }
 
-// circ data: (yc, r)  - circle center; (yt, zt) - touch point of the line and the circle
+// circ data: (yc, r)  - circle center; (yt, zt) - touch point of the v line and the circle
+// return radius circ center and touch point in attached coor sys 
 function vector4 get_radius_circ(vector pt1; vector pt2; float r; matrix T) {        
     matrix TI = invert(T);
     vector4 pt1T = TI*set(pt1[0], pt1[1], pt1[2], 1.0);
@@ -110,7 +103,7 @@ function vector4 get_radius_circ(vector pt1; vector pt2; float r; matrix T) {
     float yt = k > 0 ? yt_max : yt_min;
     float zt = k*yt+b;
     
-    return set(yc,r,yt,zt);
+    return set(yc,r,yt,zt); 
 }
 
 function int[] addpoints_radius_sector(vector circ; int npt, matrix T) {
