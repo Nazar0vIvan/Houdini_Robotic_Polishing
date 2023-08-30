@@ -40,3 +40,20 @@ function vector linsolve(float x1; float x2; float x3; float y1; float y2; float
     vector B = set(y1, y2, y3);
     return invert(A)*B;
 }
+
+function vector poly(vector pt1; vector pt2; vector pt3) {
+    return linsolve(pt1[0], pt2[0], pt3[0], pt1[1], pt2[1], pt3[1]);  
+}
+
+function vector2 polynorm(vector poly; x0) {
+    float a = poly[0]; float b = poly[1]; float c = poly[2];
+    return set(-1/2*a*x0+b, a*pow(x0,2)+b*x0*c+x0/2*a*x0+b);
+}
+
+function float polyval(a,b,x0) {
+    return a*x0+b;
+}
+
+function float polyval(a,b,c,x0) {
+    return a*pow(x0, 2)+b*x0+c;
+}
