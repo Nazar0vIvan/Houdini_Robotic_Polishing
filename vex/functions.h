@@ -20,13 +20,14 @@ function vector4 plane(vector pt1; vector pt2; vector pt3) {
     return set(A,B,C,D);
 }
 
-function vector circ(vector pt1; vector pt2; vector pt3){
+function vector4 circ(vector pt1; vector pt2; vector pt3){
     float x1 = pt1[0]; float x2 = pt2[0]; float x3 = pt3[0];
     float y1 = pt1[1]; float y2 = pt2[1]; float y3 = pt3[1];
     float xc = -0.5*(y1*(x2*x2+y2*y2-x3*x3-y3*y3)+y2*(x3*x3+y3*y3-x1*x1-y1*y1)+y3*(x1*x1+y1*y1-x2*x2-y2*y2))/(x1*(y2-y3)+x2*(y3-y1)+x3*(y1-y2));
     float yc = 0.5*(x1*(x2*x2+y2*y2-x3*x3-y3*y3)+x2*(x3*x3+y3*y3-x1*x1-y1*y1)+x3*(x1*x1+y1*y1-x2*x2-y2*y2))/(x1*(y2-y3)+x2*(y3-y1)+x3*(y1-y2));
     float r = sqrt((x1-xc)*(x1-xc) + (y1-yc)*(y1-yc));
-    return set(xc, yc, r);
+    float zc = pt1[2];
+    return set(xc, yc, zc, r);
 }
 
 function vector2 linsolve(float x1; float x2; float y1; float y2) {
@@ -47,7 +48,7 @@ function vector poly(vector pt1; vector pt2; vector pt3) {
 
 function vector2 polynorm(vector poly; float x0) {
     float a = poly[0]; float b = poly[1]; float c = poly[2];
-    return set(-1/(2*a*x0+b), a*pow(x0,2)+b*x0*c+x0/(2*a*x0+b));
+    return set(-1/(2*a*x0+b), a*x0*x0+b*x0+c + x0/(2*a*x0+b));
 }
 
 function float polyval(float a; float b; float x0) {
