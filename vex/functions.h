@@ -58,3 +58,60 @@ function float polyval(float a; float b; float x0) {
 function float polyval(float a; float b; float c; float x0) {
     return a*pow(x0,2)+b*x0+c;
 }
+
+function vector4 lsqr(int ptnums[]) {
+	vector pt;
+	float X2 = 0.; float XY = 0.; float X = 0.;
+	float Y2 = 0.; float Y = 0.;
+	float XZ = 0.; float YZ = 0.; float Z = 0.;
+	foreach(int ptnum; ptnums) {
+			pt = point(0, "P", ptnum);
+			
+			X2 += pt[0]*pt[0]; Y2 += pt[1]*pt[1];
+			XY += pt[0]*pt[1];
+			X  += pt[0]; Y  += pt[1];
+			
+			XZ += pt[0]*pt[2];
+			YZ += pt[1]*pt[2];
+			Z  += pt[2];   
+	}
+	matrix3 U = set(X2, XY, X, XY, Y2, Y, X, Y, len(ptnums));
+	vector V = set(XZ, YZ, Z);
+	vector P = invert(U)*V;
+
+	float C = 1/sqrt(P[0]*P[0]+P[1]*P[1]+1);
+	float A = -P[0]*C;
+	float B = -P[1]*C;
+	float D = -P[2]*C;
+	
+	return set(A,B,C,D);
+}
+
+function matrix3 invMatrix(matrix3 m) {
+    float m00 = getcomp(m, 0, 0); float m01 = getcomp(m, 0, 1); float m02 = getcomp(m, 0, 2);
+    float m10 = getcomp(m, 1, 0); float m11 = getcomp(m, 1, 1); float m12 = getcomp(m, 1, 2);
+    float m20 = getcomp(m, 2, 0); float m21 = getcomp(m, 2, 1); float m22 = getcomp(m, 2, 2);
+    
+    float invdet = 1/determinant(m);
+    
+    float im00 =  (m11*m22-m21*m12)*invdet;
+    float im10 = -(m01*m22-m02*m21)*invdet;
+    float im20 =  (m01*m12-m02*m11)*invdet;
+    float im01 = -(m10*m22-m12*m20)*invdet;
+    float im11 =  (m00*m22-m02*m20)*invdet;
+    float im21 = -(m00*m12-m10*m02)*invdet;
+    float im02 =  (m10*m21-m20*m11)*invdet;
+    float im12 = -(m00*m21-m20*m01)*invdet;
+    float im22 =  (m00*m11-m10*m01)*invdet;
+    
+    return set(im00, im10, im20, im01, im11, im21, im02, im12, im22);
+}
+
+function void printMatrix(matrix3 m) {
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            printf("%8.3f ", getcomp(m, i, j));
+        }
+    printf("\n");
+    }
+}
