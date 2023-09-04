@@ -87,6 +87,13 @@ function vector4 lsqr(int ptnums[]) {
 	return set(A,B,C,D);
 }
 
+function int[] linspace(int x1; int x2) {
+    int res[];
+    if(x2 < x1) return res;
+    for (int i = x1; i <= x2; ++i) push(res, i);    
+    return res;
+}
+
 function matrix3 invMatrix(matrix3 m) {
     float m00 = getcomp(m, 0, 0); float m01 = getcomp(m, 0, 1); float m02 = getcomp(m, 0, 2);
     float m10 = getcomp(m, 1, 0); float m11 = getcomp(m, 1, 1); float m12 = getcomp(m, 1, 2);
@@ -105,6 +112,13 @@ function matrix3 invMatrix(matrix3 m) {
     float im22 =  (m00*m11-m10*m01)*invdet;
     
     return set(im00, im10, im20, im01, im11, im21, im02, im12, im22);
+}
+
+function void printDict(dict dic) {
+    foreach(string key; keys(dic)) {
+        vector2 value = dic[key];
+        printf("%s: %i\n", key, value);
+    }
 }
 
 function void printMatrix(matrix3 m) {
