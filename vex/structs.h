@@ -12,3 +12,5 @@ struct Cone {
 	float a, b, c;
 	float x0, y0, z0;
 }
+
+
