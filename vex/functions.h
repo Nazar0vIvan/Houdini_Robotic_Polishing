@@ -94,6 +94,10 @@ function int[] linspace(int x1; int x2) {
     return res;
 }
 
+function void removepoints(int geohandle; int point_numbers[]) {
+    foreach(int ptnum; point_numbers) removepoint(geohandle, ptnum);
+}
+
 function matrix3 invMatrix(matrix3 m) {
     float m00 = getcomp(m, 0, 0); float m01 = getcomp(m, 0, 1); float m02 = getcomp(m, 0, 2);
     float m10 = getcomp(m, 1, 0); float m11 = getcomp(m, 1, 1); float m12 = getcomp(m, 1, 2);
