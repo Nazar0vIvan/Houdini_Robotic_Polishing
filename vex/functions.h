@@ -133,3 +133,19 @@ function void printMatrix(matrix3 m) {
     printf("\n");
     }
 }
+
+// пересечение прямой (точки u1, u2) и конуса, заданного образующей kg*x+bg
+function vector intersec_cone_line(vector u1; vector u2; float kg; float bg) {
+    vector vec = u2 - u1;
+    float vx = vec[0]; float vy = vec[1]; float vz = vec[2];
+    float x1 = u1[0]; float y1 = u1[1]; float z1 = u1[2];
+     
+    float a = pow(vy/kg,2) - pow(vx,2) + pow(vz/kg,2);
+    float b = 2*vy*y1/(pow(kg,2)) - 2*vx*(x1+bg/kg) + 2*vz*z1/(pow(kg,2));
+    float c = pow(y1/kg,2) - pow(x1+bg/kg,2) + pow(z1/kg,2);
+    
+    float t1, t2;
+    solvequadratic(a,b,c,t1,t2);
+    
+    return set(x1 + vx*t1, y1 + vy*t1, z1 + vz*t1);
+}

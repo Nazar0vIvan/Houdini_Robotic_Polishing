@@ -36,7 +36,7 @@ profiles = get_raw_blade_data("../blade_data.json")
 z = []
 for profile in profiles.values():
     z.append(profile["z"])
-
+'''
 n = len(profiles["0"]["convex"])
 for i in range(n):
     x_cx = []; y_cx = []; x_cv = []; y_cv = []
@@ -54,7 +54,7 @@ for i in range(n):
         profile["convex"][i][1] = y1
         profile["concave"][i][0] = x2
         profile["concave"][i][1] = y2
-
+'''
 # profiles = get_raw_blade_data("../blade_data.json")
 
 for profile in profiles.values():
