@@ -1,6 +1,5 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import scipy
 import json
 
 def get_raw_blade_data(filePath: str) -> dict:
@@ -27,66 +26,49 @@ def lstsq(x, y):
     k, b = np.linalg.lstsq(A, y, rcond=None)[0]
     return k*x+b
 
-def save_blade_data(file_name):
+def save_blade_data(file_name, data):
     with open(file_name, 'w') as file:
-        json.dump(profiles, file)
+        json.dump(data, file)
+
+def linearize_blade(profiles) -> dict:
+    n = len(profiles["0"]["x_cx"])
+    z = [profile["z"] for profile in profiles.values()]
+    for i in range(n):
+        x_cx = []; y_cx = []; x_cv = []; y_cv = []
+        for profile in profiles.values():
+            x_cx.append(profile.get("x_cx")[i])
+            y_cx.append(profile.get("y_cx")[i])
+            x_cv.append(profile.get("x_cv")[i])
+            y_cv.append(profile.get("y_cv")[i])
+        x_cx1 = lstsq(z, x_cx); y_cx1 = lstsq(z, y_cx)
+        x_cv1 = lstsq(z, x_cv); y_cv1 = lstsq(z, y_cv)
+        for (profile, x1, y1, x2, y2) in zip(profiles.values(), x_cx1, y_cx1, x_cv1, y_cv1):  
+            profile["x_cx"][i] = x1
+            profile["y_cx"][i] = y1
+            profile["x_cv"][i] = x2
+            profile["y_cv"][i] = y2
+    return profiles
+
+# ------------------------ BEGIN ------------------------ #
 
 profiles = get_raw_blade_data("../blade_data.json")
+lin_profiles = linearize_blade(profiles)
+save_blade_data("linearized_blade_data.json", lin_profiles)
 
-z = []
-for profile in profiles.values():
-    z.append(profile["z"])
 '''
-n = len(profiles["0"]["convex"])
-for i in range(n):
-    x_cx = []; y_cx = []; x_cv = []; y_cv = []
-    for profile in profiles.values():
-        x_cx.append(profile.get("convex")[i][0])
-        y_cx.append(profile.get("convex")[i][1])
-        x_cv.append(profile.get("concave")[i][0])
-        y_cv.append(profile.get("concave")[i][1])
-    x_cx1 = lstsq(z, x_cx)
-    y_cx1 = lstsq(z, y_cx)
-    x_cv1 = lstsq(z, x_cv)
-    y_cv1 = lstsq(z, y_cv)
-    for (profile, x1, y1, x2, y2) in zip(profiles.values(), x_cx1, y_cx1, x_cv1, y_cv1):
-        profile["convex"][i][0] = x1
-        profile["convex"][i][1] = y1
-        profile["concave"][i][0] = x2
-        profile["concave"][i][1] = y2
-'''
-# profiles = get_raw_blade_data("../blade_data.json")
-
 for profile in profiles.values():
     x = []; y = []
-    for point in profile["convex"]:
+    for point in profile["cx"]:
         x.append(point[0])
         y.append(point[1])
     profile["x_cx"] = x
     profile["y_cx"] = y
-    del profile["convex"]
+    del profile["cx"]
     x = []; y = []
-    for point in profile["concave"]:
+    for point in profile["cv"]:
         x.append(point[0])
         y.append(point[1])
     profile["x_cv"] = x
     profile["y_cv"] = y
-    del profile["concave"]
-
-save_blade_data("new_blade_data_newformat.json")
-
-# spl = scipy.interpolate.CubicSpline(x, y)
-# x = np.linspace(min(x), max(x), num = 50)
-# plot(x, spl(x))
-
-
-
-
-
-
-
-
-
-
-
-
+    del profile["cx"]
+'''
