@@ -1,5 +1,5 @@
 struct Frene {
-    vector t, b, n;
+    vector t, b, n, p;
 }
 
 struct EdgeCirc {
