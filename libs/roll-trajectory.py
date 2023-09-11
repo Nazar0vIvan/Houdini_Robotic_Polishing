@@ -51,9 +51,10 @@ def linearize_blade(profiles) -> dict:
 
 # ------------------------ BEGIN ------------------------ #
 
-profiles = get_raw_blade_data("../blade_data.json")
-lin_profiles = linearize_blade(profiles)
-save_blade_data("linearized_blade_data.json", lin_profiles)
+
+#profiles = get_raw_blade_data("../blade_data.json")
+#lin_profiles = linearize_blade(profiles)
+#save_blade_data("linearized_blade_data.json", lin_profiles)
 
 '''
 for profile in profiles.values():
@@ -72,3 +73,14 @@ for profile in profiles.values():
     profile["y_cv"] = y
     del profile["cx"]
 '''
+
+def foo(a: dict) -> dict:
+    a[1] = 3
+    return a
+
+a = [1,2,3]
+b = foo(a)
+
+print(id(a))
+print(id(b))
+
