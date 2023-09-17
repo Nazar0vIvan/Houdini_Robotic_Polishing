@@ -59,6 +59,7 @@ function float polyval(float a; float b; float c; float x0) {
     return a*pow(x0,2)+b*x0+c;
 }
 
+/*
 function vector4 lsqr(int ptnums[]) {
 	vector pt;
 	float X2 = 0.; float XY = 0.; float X = 0.;
@@ -86,6 +87,7 @@ function vector4 lsqr(int ptnums[]) {
 	
 	return set(A,B,C,D);
 }
+*/
 
 function int[] linspace(int x1; int x2) {
     int res[];
@@ -98,6 +100,7 @@ function void removepoints(int geohandle; int point_numbers[]) {
     foreach(int ptnum; point_numbers) removepoint(geohandle, ptnum);
 }
 
+/*
 function matrix3 invMatrix(matrix3 m) {
     float m00 = getcomp(m, 0, 0); float m01 = getcomp(m, 0, 1); float m02 = getcomp(m, 0, 2);
     float m10 = getcomp(m, 1, 0); float m11 = getcomp(m, 1, 1); float m12 = getcomp(m, 1, 2);
@@ -118,6 +121,8 @@ function matrix3 invMatrix(matrix3 m) {
     return set(im00, im10, im20, im01, im11, im21, im02, im12, im22);
 }
 
+
+
 function void printDict(dict dic) {
     foreach(string key; keys(dic)) {
         vector2 value = dic[key];
@@ -133,6 +138,7 @@ function void printMatrix(matrix3 m) {
     printf("\n");
     }
 }
+*/
 
 // пересечение прямой (точки u1, u2) и конуса, заданного образующей kg*x+bg
 function vector intersec_cone_line(vector u1; vector u2; float kg; float bg) {
