@@ -49,11 +49,39 @@ def linearize_blade(profiles) -> dict:
             profile["y_cv"][i] = y2
     return profiles
 
+def plot_cx_xz(profiles) -> None:
+    n = len(profiles["0"]["x_cx"])
+    z = [profile["z"] for profile in profiles.values()]
+    plt.subplot(211)
+    plt.xlabel("x_cx")
+    plt.ylabel("z")
+    for i in range(n):
+        x_cx = []
+        for profile in profiles.values():
+            x_cx.append(profile.get("x_cx")[i])
+        plt.plot(x_cx, z, '-', linewidth=1)
+
+def plot_cx_zy(profiles) -> None:
+    n = len(profiles["0"]["y_cx"])
+    z = [profile["z"] for profile in profiles.values()]
+    plt.subplot(212)
+    plt.xlabel("z")
+    plt.ylabel("y_cx")
+    for i in range(n):
+        y_cx = []
+        for profile in profiles.values():
+            y_cx.append(profile.get("y_cx")[i])
+        plt.plot(z, y_cx, '-', linewidth=1)
+
 # ------------------------ BEGIN ------------------------ #
 
+profiles = get_raw_blade_data("../blade_data.json")
+lin_profiles = linearize_blade(profiles)
 
-#profiles = get_raw_blade_data("../blade_data.json")
-#lin_profiles = linearize_blade(profiles)
+plt.figure(1)
+plot_cx_xz(lin_profiles)
+plot_cx_zy(lin_profiles)
+plt.show()
 #save_blade_data("linearized_blade_data.json", lin_profiles)
 
 '''
@@ -74,13 +102,5 @@ for profile in profiles.values():
     del profile["cx"]
 '''
 
-def foo(a: dict) -> dict:
-    a[1] = 3
-    return a
 
-a = [1,2,3]
-b = foo(a)
-
-print(id(a))
-print(id(b))
 
