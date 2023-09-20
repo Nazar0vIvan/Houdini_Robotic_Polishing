@@ -89,10 +89,11 @@ function vector4 lsqr(int ptnums[]) {
 }
 */
 
-function int[] linspace(int x1; int x2) {
+function int[] linspace(int x1; int x2; int is_end) {
     int res[];
-    if(x2 < x1) return res;
-    for (int i = x1; i <= x2; ++i) push(res, i);    
+    int k = x2 > x1 ? 1 : -1;
+    for (int i = 0; i < abs(x2-x1); ++i) push(res, x1+k*i);
+    if(is_end) push(res, x2);
     return res;
 }
 
@@ -145,7 +146,7 @@ function vector intersec_cone_line(vector u1; vector u2; float kg; float bg) {
     vector vec = u2 - u1;
     float vx = vec[0]; float vy = vec[1]; float vz = vec[2];
     float x1 = u1[0]; float y1 = u1[1]; float z1 = u1[2];
-     
+
     float a = pow(vy/kg,2) - pow(vx,2) + pow(vz/kg,2);
     float b = 2*vy*y1/(pow(kg,2)) - 2*vx*(x1+bg/kg) + 2*vz*z1/(pow(kg,2));
     float c = pow(y1/kg,2) - pow(x1+bg/kg,2) + pow(z1/kg,2);

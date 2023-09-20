@@ -8,9 +8,12 @@ struct EdgeCirc {
 		vector2 clipline2;
 }
 
+struct RuledSurf {
+	vector p1, p2, p3, p4;
+}
+
 struct Cone {
 	float a, b, c;
 	float x0, y0, z0;
 }
-
 
