@@ -2,12 +2,6 @@ struct Frene {
     vector t, b, n, p;
 }
 
-struct EdgeCirc {
-    float xc, yc, zc, R;
-		vector2 clipline1;
-		vector2 clipline2;
-}
-
 struct RuledSurf {
 	vector a1, a2, b1, b2;
 	
