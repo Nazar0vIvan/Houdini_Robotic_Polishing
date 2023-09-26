@@ -1,7 +1,3 @@
-struct Frene {
-    vector t, b, n, p;
-}
-
 struct RuledSurf {
 	vector a1, a2, b1, b2;
 	
@@ -17,9 +13,3 @@ struct RuledSurf {
 		return (this.a1 - this.b1)*(u-1) - (this.a2 - this.b2)*u;
 	}
 }
-
-struct Cone {
-	float a, b, c;
-	float x0, y0, z0;
-}
-
