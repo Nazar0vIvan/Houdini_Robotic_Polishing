@@ -80,7 +80,7 @@ function int[] addpoints_edgepf(EdgeCirc circ; int n; string edgetype) {
     float step = ea/n;
     float t = step;
     int ptnums []; int ptnum; 
-    for(int i = 0; i < n-1; i++) {
+    for(int i = 0; i < n; i++) {
         float x = circ.xc + circ.R*cos(t + ba);
         float y = circ.yc + circ.R*sin(t + ba);
         ptnum = addpoint(0, set(x,y,z) );
