@@ -53,12 +53,14 @@ function vector poly(vector pt1; vector pt2; vector pt3) {
     return linsolve(pt1[0], pt2[0], pt3[0], pt1[1], pt2[1], pt3[1]);  
 }
 
+/*
 function vector2 polynorm(vector poly; float x0) {
     float a = poly[0],
 					b = poly[1],
 					c = poly[2];
-    return set(-1/(2*a*x0+b), a*x0*x0+b*x0+c + x0/(2*a*x0+b));
+    return set(-1/(2*a*x0+b), a*x0*x0+b*x0+c + x0/(2*a*x0+b)); // in "ax + b" form
 }
+*/
 
 function float polyval(float a; float b; float x0) {
     return a*x0+b;
