@@ -3,13 +3,10 @@
 // uv - unit vector
 // for poly
 function vector get_uvy(vector pt1; vector pt2; vector pt3; vector pt0; int is_cx) {
-    float x0 = pt0[0],
-				  y0 = pt0[1];
-    vector2 norm = polynorm(poly(pt1, pt2, pt3), x0); // normal сoeffs at pt0                 
-    float x1 = 1,
-					y1 = norm[0]*x1+norm[1];
-    vector uvy = normalize(set(x1-x0, y1-y0, 0));
-    return ((uvy[1] < 0 && is_cx) || (uvy[1] > 0 && !is_cx )) ? uvy *= -1 : uvy;
+    vector2 uvy = polynorm(poly(pt1, pt2, pt3), x0); // normal сoeffs at pt0 
+		uvy = ((uvy[1] < 0 && is_cx) || (uvy[1] > 0 && !is_cx )) ? uvy *= -1 : uvy;
+		addprim(0, "polyline", addpoint(0, pt1), addpoint(0, pt1+uvy));
+    return uvy;
 }
 
 // for circ

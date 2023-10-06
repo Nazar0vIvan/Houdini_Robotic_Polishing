@@ -1,3 +1,23 @@
+function matrix rot_matrix4x4(float a; string axis) {
+    if(axis == 'x')
+        return set(1.,0.,0.,0.,0.,cos(a),sin(a),0.,0.,-sin(a),cos(a),0.,0.,0.,0.,1.);
+    if(axis == 'y')
+        return set(cos(a),0.,-sin(a),0.,0.,1.,0.,0.,sin(a),0.,cos(a),0.,0.,0.,0.,1.);
+    if(axis == 'z')
+        return set(cos(a),sin(a),0.,0.,-sin(a),cos(a),0.,0.,0.,0.,1.,0.,0.,0.,0.,1.);
+    return matrix();
+}
+
+function matrix3 rot_matrix3x3(float a; string axis) {
+    if(axis == 'x')
+        return set(1.,0.,0.,0.,cos(a),sin(a),0.,-sin(a),cos(a));
+    if(axis == 'y')
+        return set(cos(a),0.,-sin(a),0.,1.,0.,sin(a),0.,cos(a));
+    if(axis == 'z')
+        return set(cos(a),sin(a),0.,-sin(a),cos(a),0.,0.,0.,1.);
+    return matrix3();
+}
+
 function float[] plane(vector norm; vector pt) {
 		float A = norm[0],
 				  B = norm[1],
