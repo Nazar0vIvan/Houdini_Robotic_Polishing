@@ -38,4 +38,5 @@ def rot2euler(rot, is_deg = False):
     C2 = np.arctan2(rot[2][1]/np.cos(B2), rot[2][2]/np.cos(B2))
     A1 = np.arctan2(rot[1][0]/np.cos(B1), rot[0][0]/np.cos(B1))
     A2 = np.arctan2(rot[1][0]/np.cos(B2), rot[0][0]/np.cos(B2))  
-    return {"A1": deg*A1, "A2": deg*A2, "B1": deg*B1, "B2": deg*B2, "C1": deg*C1, "C2": deg*C2}
+    return {"A1": deg*A1, "A2": deg*A2, "B1": deg*B1, "B2": deg*B2, "C1": deg*C1, "C2": deg*C2 }
+
