@@ -133,7 +133,7 @@ def getFreneFrame(u1,u2,v1,v2,p):
     [tauSym, bnormSym] = getTNBVectorsByVectorFunction(xu,yu,zu)
     Cu = getPolynom2DCoefficients(u1.position().x(), p.position().x(), u2.position().x(), u1.position().y(), p.position().y(), u2.position().y())
     Cv = getPolynom2DCoefficients(v1.position().z(), p.position().z(), v2.position().z(), v1.position().y(), p.position().y(), v2.position().y())
-    tau = []; bnorm = []
+    tau = []; bnorm = []s
     for coor_fun in tauSym: tau.append(float(coor_fun.subs([(t,p.position().x()),(a0,Cu[0]),(a1,Cu[1]),(a2,Cu[2])])))
     for coor_fun in bnormSym: bnorm.append(float(coor_fun.subs([(t,p.position().z()),(a0,Cv[0]),(a1,Cv[1]),(a2,Cv[2])])))
     norm = np.cross(tau,bnorm)
