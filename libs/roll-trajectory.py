@@ -75,6 +75,18 @@ def plot_cx_zy(profiles) -> None:
 
 # ------------------------ BEGIN ------------------------ #
 
+v1 = [11.4859, 19.3041, 137.7]
+p = [11.5401, 19.2437, 137.132]
+v2 = [11.5943, 19.1836, 136.5630]
+
+x = [137.7, 137.132, 136.5630]
+y = [19.3041, 19.2437, 19.1836]
+
+plt.plot(x, y, '-o', linewidth=1)
+plt.grid(True)
+plt.show()
+
+'''
 profiles = get_raw_blade_data("../blade_data.json")
 lin_profiles = linearize_blade(profiles)
 
@@ -83,7 +95,7 @@ plot_cx_xz(lin_profiles)
 plot_cx_zy(lin_profiles)
 plt.show()
 #save_blade_data("linearized_blade_data.json", lin_profiles)
-
+'''
 '''
 for profile in profiles.values():
     x = []; y = []
