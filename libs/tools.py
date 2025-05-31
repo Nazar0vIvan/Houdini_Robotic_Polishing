@@ -27,12 +27,11 @@ class Tool:
 @dataclass
 class W1FF1(Tool):
     D: float 
-    W: float
-    R: float
+    B: float
     
     def __post_init__(self):
         super().__init__()
-        self.transf_orig2surf = np.array([[1.,0.,0.,-self.D/2], [0.,1.,0.,0.], [0.,0.,1.,0.], [0.,0.,0.,1.]])
+        self.transf_orig2surf = np.array([[1.,0.,0.,-self.D/2], [0.,1.,0.,0.], [0.,0.,1.,-self.B/2.], [0.,0.,0.,1.]])
 
 @dataclass
 class W5CHIX(Tool):

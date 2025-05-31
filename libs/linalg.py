@@ -3,7 +3,7 @@ import sympy as sym
 import numpy as np
 from math import pi, sin, cos
 
-def rotationMatrix3x3(angle: float, axis: float):
+def rotationMatrix3x3(angle: float, axis: str):
     if (axis == "x"):
         rot = np.array([[1.,0.,0.],[0.,np.cos(angle),-np.sin(angle)],[0.,sin(angle),np.cos(angle)]])        
     elif (axis == "y"):
@@ -13,7 +13,7 @@ def rotationMatrix3x3(angle: float, axis: float):
     rot[np.absolute(rot)<=0.0001] = 0.
     return rot
     
-def rotationMatrix4x4(angle: float, axis: float):
+def rotationMatrix4x4(angle: float, axis: str):
     if (axis == "x"):
         rot = np.array([[1.,0.,0.,0.],[0.,np.cos(angle),-np.sin(angle), 0.],[0.,sin(angle),np.cos(angle),0.],[0.,0.,0.,1.]])        
     elif (axis == "y"):
@@ -42,11 +42,17 @@ def rot2euler(rot, is_deg: bool = False):
     A2 = np.arctan2(rot[1][0]/np.cos(B2), rot[0][0]/np.cos(B2))  
     return {"A1": deg*A1, "A2": deg*A2, "B1": deg*B1, "B2": deg*B2, "C1": deg*C1, "C2": deg*C2 }
 
-def poly(x0, x1, x2, y0, y1, y2):
-    A = np.array([[x0**2,x0,1],[x1**2,x1,1],[x2**2,x2,1]])
-    B = np.array([y0,y1,y2])
-    C = np.linalg.solve(A,B)   
-    return C[0], C[1], C[2]
+
+def poly(*points) -> np.ndarray:
+    points = np.array(points)
+    x = points[:, 0]
+    y = points[:, 1]
+    n = len(points)
+    A = np.vander(x, n, increasing=False)
+    return np.linalg.solve(A, y)
+
+def normalize(arr) -> np.ndarray:
+    return arr/np.linalg.norm(arr)
 
 # only for second-degree polynomial function
 @dataclass
