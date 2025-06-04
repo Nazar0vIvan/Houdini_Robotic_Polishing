@@ -40,7 +40,7 @@ function EdgeCirc edgecirc_bytans(vector2 line1; vector2 line2; vector pt1; vect
     return EdgeCirc(xc, yc, zc, r, clipline1, clipline2);
 }
 
-function int[] addpoints_edgepf(EdgeCirc circ; int n; string edgetype) {
+function int[] addpoints_edgepf(EdgeCirc circ; int n; int pfnum; string edgetype) {
     float k1 = circ.clipline1[0]; float k2 = circ.clipline2[0];
     float z = circ.zc;
     float ba; // begin angle
@@ -85,6 +85,7 @@ function int[] addpoints_edgepf(EdgeCirc circ; int n; string edgetype) {
         float y = circ.yc + circ.R*sin(t + ba);
         ptnum = addpoint(0, set(x,y,z) );
         setpointattrib(0, "blade_part", ptnum, edgetype);
+				setpointattrib(0, "pfnum", ptnum, pfnum);
         push(ptnums, ptnum);
         t += step;
      }
