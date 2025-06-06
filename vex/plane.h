@@ -1,5 +1,5 @@
 struct Plane {
-	float coeffs[];
+	vector4 coeffs;
 	
 	function int is_above(vector pt) {
 		float aa = -this.coeffs[0]/this.coeffs[2],
