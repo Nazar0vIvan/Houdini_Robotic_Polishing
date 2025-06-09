@@ -50,23 +50,6 @@ def get_belt_frame(orig: np.array, x: np.array, y: np.array, z: np.array):
 
 ### BLADE ### 
 
-class Blade:
-    def __init__(self, data: dict):
-        self._convex = []
-        self._npc = [] # number of points on the convex/concave
-        for key, value in data.items():
-            x_cx = value["x_cx"]; y_cx = value["y_cx"]; z = value["z"]
-            self._npc.append(len(x_cx))
-            self._convex.append([])
-            for x,y in zip(x_cx, y_cx):
-                self._convex[-1].append(np.array([x,y,z]))
-    @property
-    def convex(self):
-        return self._convex
-    @property
-    def npc(self):
-        return self._npc
-
 def get_lead_point(pt1: list, pt2: list, dist: float) -> np.ndarray:
     #pt1 - the last point of cx/cv
     #pt2 - the point before the last of cx/cv
@@ -83,35 +66,35 @@ def get_frene(p0: np.array, u1: np.array, u2: np.array, v1: np.array) -> Frene:
     coeffs_u = poly(u1[0], p0[0], u2[0], u1[1], p0[1], u2[1]) 
     tanu = vecfun_u.tangent_val(p0[0], coeffs_u)
     if(tanu[0] > 0): tanu = -1*tanu
-    
     tanv = v1 - p0
     normalized_tanv = tanv/np.linalg.norm(tanv)
-
     norm = np.cross(tanu, normalized_tanv)
     normalized_norm = norm/np.linalg.norm(norm)
     binorm = np.cross(normalized_norm, tanu)
-
     return Frene(tanu, binorm, norm, p0)
 
-def get_airstripe_frenes_CX(i: int, blade: dict) -> list:
+
+# CX - BEGIN
+def get_cx_airstripe_frenes(blade: dict, pfnum: int) -> list:
     frenes = [Frene()]
-    npt = len(blade[0]["cx"])
+    npt = len(blade[pfnum]["cx"])
     for ptnum in range(1, npt-1):
-        p0 = np.array(blade[i]["cx"][ptnum])
-        u1 = np.array(blade[i]["cx"][ptnum-1])
-        u2 = np.array(blade[i]["cx"][ptnum+1])   
-        v1 = np.array(blade[i-1]["cx"][ptnum])
+        p0 = np.array(blade[pfnum]["cx"][ptnum])
+        u1 = np.array(blade[pfnum]["cx"][ptnum-1])
+        u2 = np.array(blade[pfnum]["cx"][ptnum+1])   
+        v1 = np.array(blade[pfnum+1]["cx"][ptnum])
         frenes.append(get_frene(p0, u1, u2, v1))
-    frenes[0] = Frene(frenes[1].t, frenes[1].b, frenes[1].n, blade[i]["cx"][0])
-    frenes.append(Frene(frenes[-1].t, frenes[-1].b, frenes[-1].n, blade[i]["cx"][-1]))
+    frenes[0] = Frene(frenes[1].t, frenes[1].b, frenes[1].n, np.array(blade[pfnum]["cx"][0]))
+    frenes.append(Frene(frenes[-1].t, frenes[-1].b, frenes[-1].n, np.array(blade[pfnum]["cx"][-1])))
     return frenes
 
-def json2frenes_CX(path):
-    with open(path, 'r') as file:
-        blade = json.load(file)
-    return get_airstripe_frenes_CX(1, blade)
+def get_cx_frenes(blade: dict, airstripes_count: int) -> list:
+    frenes = []
+    for i in range(airstripes_count):
+        frenes.append(get_cx_airstripe_frenes(blade, i))
+    return frenes
 
-def generateDATFile(program_name: str, profile_prefix: str, trajectory: list) -> None:
+def generate_cx_dat(program_name: str, profile_prefix: str, trajectory: list) -> None:
     n = len(trajectory)
     with open(f"{program_name}.dat", 'w') as file:
         file.write(f"DEFDAT {program_name}\n")
@@ -121,37 +104,43 @@ def generateDATFile(program_name: str, profile_prefix: str, trajectory: list) ->
         for i in range(n):
             file.write(f"{profile_prefix}[{i}] = {{X {trajectory[i][0]}, Y {trajectory[i][1]}, Z {trajectory[i][2]}, A {trajectory[i][3]}, B {trajectory[i][4]}, C {trajectory[i][5]}}}\n")
 
+def generate_cx_src(program_name: str, profile_prefix: str, trajectory: list) -> None:
+    n = len(trajectory)
+    with open(f"{program_name}.src", 'w') as file:
+        file.write(f"DEF {program_name}()\n")
+        file.write("DECL INT i\n\n")
+        file.write("INI i\n\n")
+        file.write("PTP HOME Vel=100% DEFAULT\n")
+        file.write("$BASE = BASE_DATA[2]\n")
+        file.write("$TOOL = TOOL_DATA[2]\n\n")
+        file.write(f"; {profile_prefix}[{i}]\n")
 
-def generateSRCFile(program_name: str, profile_name: str, trajectory: list) -> None:
-    print(1)
+# CX - END
 
-### BEGIN
+### BEGIN ###
 
-'''
-# T -> 0
-oT = np.array([1009.15, -16.49, 623.81])
-xT = np.array([996.14, 1010.89, 1010.89, 1023.99, 1014.15, 1014.15, 1004.89, 1004.89, 1009.15])
-yT = np.array([-16.14, -29.24, 0.92, -16.14, -10.54, -22.95, -22.21, -10.51, -16.49])
-zT = np.array([625.57, 623.52, 623.48, 622.35, 623.61, 622.86, 624.73, 624.40, 623.81])
-[BELT_FRAME, AT0] = get_belt_frame(oT, xT, yT, zT)
-#print("BELT_FRAME:\n", "X: ", BELT_FRAME[0], "| Y: ", BELT_FRAME[1], "| Z: ", BELT_FRAME[2], "| A: ", BELT_FRAME[3], "| B: ", BELT_FRAME[4], "| C: ", BELT_FRAME[5])
-'''
 with open("99.01.25.242.json", 'r') as file:
     blade = json.load(file)
 
 # i -> B
-frenes_cx = []
-for i in range(0,2): #len(blade)
-    profile = blade[i]
-    cx = profile["cx"]
-    cx[0] = get_lead_point(cx[1], cx[2], 5)
-    cx[-1] = get_lead_point(cx[-2], cx[-3], 5)
-    cv = profile["cv"]
-    cv[0] = get_lead_point(cv[1], cv[2], 5)
-    cv[-1] = get_lead_point(cv[-2], cv[-3], 5)
-    frenes_cx[i] = get_airstripe_frenes_CX(i, blade)
+cx_frenes = []
+'''
+[
+    [Frene_11, Frene_12 ...]
+    [Frene_21, Frene_22 ...]
+    ...
+    [Frene_n1, Frene_n2 ...]
+]
+'''
+
+blade[1]["cx"][0] = get_lead_point(blade[1]["cx"][1], blade[1]["cx"][2], 5)
+blade[1]["cx"][-1] = get_lead_point(blade[1]["cx"][-2], blade[1]["cx"][-3], 5)
+
+cx_frenes = get_cx_frenes(blade, 1) 
 
 
+
+'''
 # B -> F
 ABF = np.dot(translationMatrix([0.011, 0.047, 153.319]), rotationMatrix4x4(radians(-49), "z"))
 # i -> T
@@ -161,7 +150,7 @@ ABTs = []
 trajectory = []
 i = 0
 # ABF_inv = np.linalg.inv(ABF)
-for frene in frenes:
+for frene in frenes_cx:
     ABT = np.dot(AiT, np.linalg.inv(frene.transf))
     ABTs.append(ABT)
     euler = rot2euler(ABT, True)
@@ -177,8 +166,7 @@ for frene in frenes:
 
 rounded_trajectory = np.round(np.array(trajectory),3)
 generateDATFile("convex_wheel", "A1", rounded_trajectory)
-
-
+'''
 
 '''
 def printFloatList(data, precision):
@@ -188,6 +176,14 @@ def printFloatList(data, precision):
 
 '''
 ### BACKUP ###
+
+# T -> 0
+oT = np.array([1009.15, -16.49, 623.81])
+xT = np.array([996.14, 1010.89, 1010.89, 1023.99, 1014.15, 1014.15, 1004.89, 1004.89, 1009.15])
+yT = np.array([-16.14, -29.24, 0.92, -16.14, -10.54, -22.95, -22.21, -10.51, -16.49])
+zT = np.array([625.57, 623.52, 623.48, 622.35, 623.61, 622.86, 624.73, 624.40, 623.81])
+[BELT_FRAME, AT0] = get_belt_frame(oT, xT, yT, zT)
+#print("BELT_FRAME:\n", "X: ", BELT_FRAME[0], "| Y: ", BELT_FRAME[1], "| Z: ", BELT_FRAME[2], "| A: ", BELT_FRAME[3], "| B: ", BELT_FRAME[4], "| C: ", BELT_FRAME[5])
 
 class Blade:
     def __init__(self, data: dict):
