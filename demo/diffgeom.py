@@ -3,10 +3,10 @@ import numpy as np
 
 @dataclass
 class Frene:
-    t: np.ndarray
-    b: np.ndarray
-    n: np.ndarray
-    p: np.ndarray
+    t: np.ndarray = np.array([[],[],[]])
+    b: np.ndarray = np.array([[],[],[]])
+    n: np.ndarray = np.array([[],[],[]])
+    p: np.ndarray = np.array([[],[],[]])
     transf: np.ndarray = None
 
     def __post_init__(self):
