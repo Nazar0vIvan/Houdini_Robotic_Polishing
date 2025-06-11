@@ -1,0 +1,31 @@
+#include "$HIP/vex/functions.h"
+#include <math.h>
+
+// {2} - scheme
+// {1} - root
+// {0} - airfoil
+
+vector pt1_2 = set(-22.5, -22.5*tan(radians(25.0)), 8.6),
+       pt2_2 = set( 25.5,  25.5*tan(radians(25.0)), 10.5);
+
+matrix3 R21 = rot_matrix3x3(-radians(25.0), 'z'); // {2} -> {1}
+        
+vector pt1_1 = R21*pt1_2,
+       pt2_1 = R21*pt2_2;
+    
+vector2 root_plane_line = linsolve(pt1_1[0], pt2_1[0], pt1_1[2], pt2_1[2]);
+float k = root_plane_line[0],
+      b = root_plane_line[1];
+vector norm1 = normalize(-set(k, 0., -1.));
+
+matrix3 R10 = rot_matrix3x3(-radians(17.0), 'z');
+
+vector norm0 = R10*norm1;
+vector pt1_0 = R10*pt1_1;
+vector pt2_0 = R10*pt2_1;
+
+matrix3 R = rot_matrix3x3(radians(17.0), 'z')*rot_matrix3x3(atan(k), 'y');
+vector norm = R*norm0;
+
+setdetailattrib(0, "root_plane", plane(norm0, pt2_0));
+setdetailattrib(0, "R", R);

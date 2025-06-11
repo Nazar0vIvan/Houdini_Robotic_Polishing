@@ -7,6 +7,13 @@ from math import radians
 np.set_printoptions(suppress=True)
 np.set_printoptions(precision=3)
 
+def print_float_lists(list_of_lists):
+    print("[")
+    for inner_list in list_of_lists:
+        formatted = [float(f"{num:.3f}") for num in inner_list]
+        print(f"    {formatted},")
+    print("]")
+
 ### BELT ###
 
 def get_belt_frame(orig: np.array, x: np.array, y: np.array, z: np.array):
@@ -47,7 +54,6 @@ def get_belt_frame(orig: np.array, x: np.array, y: np.array, z: np.array):
 
     return [frame, AT0]
 
-
 ### BLADE ### 
 
 def get_lead_point(pt1: list, pt2: list, dist: float) -> np.ndarray:
@@ -65,7 +71,7 @@ def get_frene(p0: np.array, u1: np.array, u2: np.array, v1: np.array) -> Frene:
     vecfun_u = VectorFunction(xu, yu, zu)
     coeffs_u = poly(u1[0], p0[0], u2[0], u1[1], p0[1], u2[1]) 
     tanu = vecfun_u.tangent_val(p0[0], coeffs_u)
-    if(tanu[0] > 0): tanu = -1*tanu
+    if(tanu[0] < 0): tanu = -1*tanu
     tanv = v1 - p0
     normalized_tanv = tanv/np.linalg.norm(tanv)
     norm = np.cross(tanu, normalized_tanv)
@@ -73,48 +79,56 @@ def get_frene(p0: np.array, u1: np.array, u2: np.array, v1: np.array) -> Frene:
     binorm = np.cross(normalized_norm, tanu)
     return Frene(tanu, binorm, norm, p0)
 
-
 # CX - BEGIN
-def get_cx_airstripe_frenes(blade: dict, pfnum: int) -> list:
-    frenes = [Frene()]
-    npt = len(blade[pfnum]["cx"])
-    for ptnum in range(1, npt-1):
-        p0 = np.array(blade[pfnum]["cx"][ptnum])
-        u1 = np.array(blade[pfnum]["cx"][ptnum-1])
-        u2 = np.array(blade[pfnum]["cx"][ptnum+1])   
-        v1 = np.array(blade[pfnum+1]["cx"][ptnum])
-        frenes.append(get_frene(p0, u1, u2, v1))
-    frenes[0] = Frene(frenes[1].t, frenes[1].b, frenes[1].n, np.array(blade[pfnum]["cx"][0]))
-    frenes.append(Frene(frenes[-1].t, frenes[-1].b, frenes[-1].n, np.array(blade[pfnum]["cx"][-1])))
-    return frenes
-
 def get_cx_frenes(blade: dict, airstripes_count: int) -> list:
     frenes = []
     for i in range(airstripes_count):
         frenes.append(get_cx_airstripe_frenes(blade, i))
     return frenes
 
-def generate_cx_dat(program_name: str, profile_prefix: str, trajectory: list) -> None:
-    n = len(trajectory)
+def get_cx_airstripe_frenes(blade: dict, pfnum: int) -> list:
+    pf_frenes = [Frene()]
+    npt = len(blade[pfnum]["cx"])
+    for ptnum in range(1, npt-1):
+        p0 = np.array(blade[pfnum]["cx"][ptnum])
+        u1 = np.array(blade[pfnum]["cx"][ptnum-1])
+        u2 = np.array(blade[pfnum]["cx"][ptnum+1])   
+        v1 = np.array(blade[pfnum+1]["cx"][ptnum])
+        pf_frenes.append(get_frene(p0, u1, u2, v1))
+    pf_frenes[0] = Frene(pf_frenes[1].t, pf_frenes[1].b, pf_frenes[1].n, np.array(blade[pfnum]["cx"][0]))
+    pf_frenes.append(Frene(pf_frenes[-1].t, pf_frenes[-1].b, pf_frenes[-1].n, np.array(blade[pfnum]["cx"][-1])))
+    return pf_frenes if pfnum % 2 == 0 else pf_frenes[::-1]
+
+def generate_cx_dat(program_name: str, pf_prefix: str, path: list) -> None:
+    n = len(path)
+    m = len(path[0])
     with open(f"{program_name}.dat", 'w') as file:
         file.write(f"DEFDAT {program_name}\n")
-        file.write("EXTERNAL DECLARATION\n\n")
-        file.write(f"; ### {profile_prefix} ###\n\n")
-        file.write(f"DECL POS {profile_prefix}[{n}]\n\n")
+        file.write("EXTERNAL DECLARATION")
         for i in range(n):
-            file.write(f"{profile_prefix}[{i}] = {{X {trajectory[i][0]}, Y {trajectory[i][1]}, Z {trajectory[i][2]}, A {trajectory[i][3]}, B {trajectory[i][4]}, C {trajectory[i][5]}}}\n")
-
-def generate_cx_src(program_name: str, profile_prefix: str, trajectory: list) -> None:
-    n = len(trajectory)
+            file.write(f"\n\n; ### {pf_prefix}{i+1} ###\n\n")
+            file.write(f"DECL POS {pf_prefix}{i+1}[{m}]\n\n")
+            for j, pos in enumerate(path[i]):
+                file.write(f"{pf_prefix}{i+1}[{j+1}] = {{X {pos[0]}, Y {pos[1]}, Z {pos[2]}, A {pos[3]}, B {pos[4]}, C {pos[5]}}}\n")
+            
+def generate_cx_src(program_name: str, pf_prefix: str, path: list) -> None:
+    n = len(path)
+    m = len(path[0])
     with open(f"{program_name}.src", 'w') as file:
         file.write(f"DEF {program_name}()\n")
-        file.write("DECL INT i\n\n")
-        file.write("INI i\n\n")
-        file.write("PTP HOME Vel=100% DEFAULT\n")
-        file.write("$BASE = BASE_DATA[2]\n")
+        file.write("INI\n\n")
+        file.write("PTP HOME Vel=100% DEFAULT\n\n")
+        file.write("$BASE = BASE_DATA[6]\n")
         file.write("$TOOL = TOOL_DATA[2]\n\n")
-        file.write(f"; {profile_prefix}[{i}]\n")
+        file.write("PTP {A1 0, A2 -90, A3 90, A4 0, A5 0, A6 0}")
+        for i in range(n):
+            file.write(f"\n\n; ### {pf_prefix}{i+1} ###\n")
+            file.write("SPLINE WITH $VEL= {CP 0.001, ORI1 0.001, ORI2 0.001}\n")
+            for j, pos in enumerate(path[i]):
+                file.write(f"  SPL {pf_prefix}{i+1}[{j+1}]\n")
+            file.write("ENDSPLINE")
 
+        
 # CX - END
 
 ### BEGIN ###
@@ -133,40 +147,55 @@ cx_frenes = []
 ]
 '''
 
-blade[1]["cx"][0] = get_lead_point(blade[1]["cx"][1], blade[1]["cx"][2], 5)
-blade[1]["cx"][-1] = get_lead_point(blade[1]["cx"][-2], blade[1]["cx"][-3], 5)
 
-cx_frenes = get_cx_frenes(blade, 1) 
+for i in range(2):
+    blade[i]["cx"][0] = get_lead_point(blade[i]["cx"][1], blade[i]["cx"][2], 5)
+    blade[i]["cx"][-1] = get_lead_point(blade[i]["cx"][-2], blade[i]["cx"][-3], 5)
 
+cx_frenes = get_cx_frenes(blade, 2)
 
-
-'''
 # B -> F
 ABF = np.dot(translationMatrix([0.011, 0.047, 153.319]), rotationMatrix4x4(radians(-49), "z"))
 # i -> T
-AiT = np.array([[0,1,0,0],[1,0,0,0],[0,0,-1,0],[0,0,0,1]])
+AiT = np.array([[0,-1,0,0],[-1,0,0,0],[0,0,-1,0],[0,0,0,1]])
 
 ABTs = []
-trajectory = []
-i = 0
+path = []
+#i = 0; j = 0
 # ABF_inv = np.linalg.inv(ABF)
-for frene in frenes_cx:
-    ABT = np.dot(AiT, np.linalg.inv(frene.transf))
-    ABTs.append(ABT)
-    euler = rot2euler(ABT, True)
-    A = euler.get('A1')
-    B = euler.get('B1')
-    C = euler.get('C1')
-    X = ABT[0][3]
-    Y = ABT[1][3]
-    Z = ABT[2][3]
-    trajectory.append([X,Y,Z,A,B,C])
-    #print(f"{i}: ", np.around(trajectory[-1], decimals=2))
-    i = i + 1
+for pf_frene in cx_frenes:
+    pf_path = []
+    #j = 0
+    for frene in pf_frene:
+        ABT = np.dot(AiT, np.linalg.inv(frene.transf))
+        ABTs.append(ABT)
+        euler = rot2euler(ABT, True)
+        A = euler.get('A1')
+        B = euler.get('B1')
+        C = euler.get('C1')
+        X = ABT[0][3]
+        Y = ABT[1][3]
+        Z = ABT[2][3]
+        pf_path.append([X,Y,Z,A,B,C])
+        #print(f"{i}|{j}: ", np.around(trajectory[-1], decimals=2))
+        #j = j + 1
+    #i = i + 1
+    path.append(pf_path)
+        
+rounded_path = np.round(np.array(path),3)
 
-rounded_trajectory = np.round(np.array(trajectory),3)
-generateDATFile("convex_wheel", "A1", rounded_trajectory)
+generate_cx_dat("convex_wheel", "A", rounded_path)
+generate_cx_src("convex_wheel", "A", rounded_path)
+
 '''
+i = 0
+for pf in rounded_path:
+    print(f"profile #{i}")
+    for p in pf:
+        print(    p)
+    i = i + 1
+'''
+
 
 '''
 def printFloatList(data, precision):

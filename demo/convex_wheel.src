@@ -1,0 +1,41 @@
+DEF convex_wheel()
+INI
+
+PTP HOME Vel=100% DEFAULT
+
+$BASE = BASE_DATA[6]
+$TOOL = TOOL_DATA[2]
+
+PTP {A1 0, A2 -90, A3 90, A4 0, A5 0, A6 0}
+
+; ### A1 ###
+SPLINE WITH $VEL= {CP 0.001, ORI1 0.001, ORI2 0.001}
+  SPL A1[1]
+  SPL A1[2]
+  SPL A1[3]
+  SPL A1[4]
+  SPL A1[5]
+  SPL A1[6]
+  SPL A1[7]
+  SPL A1[8]
+  SPL A1[9]
+  SPL A1[10]
+  SPL A1[11]
+  SPL A1[12]
+ENDSPLINE
+
+; ### A2 ###
+SPLINE WITH $VEL= {CP 0.001, ORI1 0.001, ORI2 0.001}
+  SPL A2[1]
+  SPL A2[2]
+  SPL A2[3]
+  SPL A2[4]
+  SPL A2[5]
+  SPL A2[6]
+  SPL A2[7]
+  SPL A2[8]
+  SPL A2[9]
+  SPL A2[10]
+  SPL A2[11]
+  SPL A2[12]
+ENDSPLINE
