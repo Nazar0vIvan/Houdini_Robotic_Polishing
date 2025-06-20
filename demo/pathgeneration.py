@@ -14,7 +14,7 @@ def print_float_lists(list_of_lists):
         print(f"    {formatted},")
     print("]")
 
-### BELT ###
+### BELT {L} ###
 
 def get_belt_frame(orig: np.array, x: np.array, y: np.array, z: np.array):
     # T - TOOL: belt - tau, beta, nu
@@ -40,19 +40,19 @@ def get_belt_frame(orig: np.array, x: np.array, y: np.array, z: np.array):
     tau = tau.reshape((-1,1))
     beta = beta.reshape((-1,1))
     nu = nu.reshape((-1,1))
-    RT0 = np.hstack((tau, np.hstack((beta,nu)))) # rotation matrix from belt frame to robot base frame
+    RL0 = np.hstack((tau, np.hstack((beta,nu)))) # rotation matrix from belt frame to robot base frame
 
-    A = np.degrees(np.arctan2(RT0[1,0],RT0[0,0]))
-    B = np.degrees(np.arcsin(-RT0[2,0]))
-    C = np.degrees(np.arctan2(RT0[2,1],RT0[2,2]))
+    A = np.degrees(np.arctan2(RL0[1,0],RL0[0,0]))
+    B = np.degrees(np.arcsin(-RL0[2,0]))
+    C = np.degrees(np.arctan2(RL0[2,1],RL0[2,2]))
     frame = np.array([orig[0], orig[1], orig[2], A, B, C])
 
     # matrix AT0
-    AT0 = RT0
-    AT0 = np.append(RT0, orig.reshape((-1,1)), axis=1)
-    AT0 = np.vstack((AT0, np.array([0,0,0,1])))
+    AL0 = RL0
+    AL0 = np.append(RL0, orig.reshape((-1,1)), axis=1)
+    AL0 = np.vstack((AL0, np.array([0,0,0,1])))
 
-    return [frame, AT0]
+    return [frame, AL0]
 
 ### BLADE ### 
 
@@ -110,7 +110,8 @@ def generate_cx_dat(program_name: str, pf_prefix: str, path: list) -> None:
             file.write(f"DECL POS {pf_prefix}{i+1}[{m}]\n\n")
             for j, pos in enumerate(path[i]):
                 file.write(f"{pf_prefix}{i+1}[{j+1}] = {{X {pos[0]}, Y {pos[1]}, Z {pos[2]}, A {pos[3]}, B {pos[4]}, C {pos[5]}}}\n")
-            
+        file.write("ENDDAT")
+        
 def generate_cx_src(program_name: str, pf_prefix: str, path: list) -> None:
     n = len(path)
     m = len(path[0])
@@ -118,35 +119,41 @@ def generate_cx_src(program_name: str, pf_prefix: str, path: list) -> None:
         file.write(f"DEF {program_name}()\n")
         file.write("INI\n\n")
         file.write("PTP HOME Vel=100% DEFAULT\n\n")
-        file.write("$BASE = BASE_DATA[6]\n")
+        file.write("$BASE = BASE_DATA[3]\n")
         file.write("$TOOL = TOOL_DATA[2]\n\n")
         file.write("PTP {A1 0, A2 -90, A3 90, A4 0, A5 0, A6 0}")
         for i in range(n):
             file.write(f"\n\n; ### {pf_prefix}{i+1} ###\n")
             file.write("SPLINE WITH $VEL= {CP 0.001, ORI1 0.001, ORI2 0.001}\n")
-            for j, pos in enumerate(path[i]):
-                file.write(f"  SPL {pf_prefix}{i+1}[{j+1}]\n")
+            file.write(f"  SLIN {pf_prefix}{i+1}[{1}] WITH $VEL= {{CP 0.05, ORI1 0.05, ORI2 0.05}}\n")
+            for j in range(m-1):
+                file.write(f"  SPL {pf_prefix}{i+1}[{j+2}]\n")
             file.write("ENDSPLINE")
-
-        
-# CX - END
 
 ### BEGIN ###
 
 with open("99.01.25.242.json", 'r') as file:
     blade = json.load(file)
 
+# CONVEX #
+
+# L -> 0
+oT = np.array([1009.15, -16.49, 623.81])
+xT = np.array([996.14, 1010.89, 1010.89, 1023.99, 1014.15, 1014.15, 1004.89, 1004.89, 1009.15])
+yT = np.array([-16.14, -29.24, 0.92, -16.14, -10.54, -22.95, -22.21, -10.51, -16.49])
+zT = np.array([625.57, 623.52, 623.48, 622.35, 623.61, 622.86, 624.73, 624.40, 623.81])
+[BELT_FRAME, AL0] = get_belt_frame(oT, xT, yT, zT)
+#print("BELT_FRAME:\n", "X: ", BELT_FRAME[0], "| Y: ", BELT_FRAME[1], "| Z: ", BELT_FRAME[2], "| A: ", BELT_FRAME[3], "| B: ", BELT_FRAME[4], "| C: ", BELT_FRAME[5])
+
 # i -> B
 cx_frenes = []
-'''
-[
-    [Frene_11, Frene_12 ...]
-    [Frene_21, Frene_22 ...]
-    ...
-    [Frene_n1, Frene_n2 ...]
-]
-'''
 
+#[
+#    [Frene_11, Frene_12 ...]
+#    [Frene_21, Frene_22 ...]
+#    ...
+#    [Frene_n1, Frene_n2 ...]
+#]
 
 for i in range(2):
     blade[i]["cx"][0] = get_lead_point(blade[i]["cx"][1], blade[i]["cx"][2], 5)
@@ -157,17 +164,16 @@ cx_frenes = get_cx_frenes(blade, 2)
 # B -> F
 ABF = np.dot(translationMatrix([0.011, 0.047, 153.319]), rotationMatrix4x4(radians(-49), "z"))
 # i -> T
-AiT = np.array([[0,-1,0,0],[-1,0,0,0],[0,0,-1,0],[0,0,0,1]])
+AiL = np.array([[-1.,0.,0.,0.],[0.,1.,0.,0.],[0.,0.,-1.,0.],[0.,0.,0.,1.]])
 
 ABTs = []
 path = []
 #i = 0; j = 0
-# ABF_inv = np.linalg.inv(ABF)
 for pf_frene in cx_frenes:
     pf_path = []
     #j = 0
     for frene in pf_frene:
-        ABT = np.dot(AiT, np.linalg.inv(frene.transf))
+        ABT = np.dot(AiL, np.linalg.inv(frene.transf))
         ABTs.append(ABT)
         euler = rot2euler(ABT, True)
         A = euler.get('A1')
