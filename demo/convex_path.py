@@ -7,13 +7,6 @@ from math import radians
 np.set_printoptions(suppress=True)
 np.set_printoptions(precision=3)
 
-def print_float_lists(list_of_lists):
-    print("[")
-    for inner_list in list_of_lists:
-        formatted = [float(f"{num:.3f}") for num in inner_list]
-        print(f"    {formatted},")
-    print("]")
-
 ### BELT {L} ###
 
 def get_belt_frame(orig: np.array, x: np.array, y: np.array, z: np.array):
@@ -97,7 +90,7 @@ def get_cx_airstripe_frenes(blade: dict, pfnum: int) -> list:
         pf_frenes.append(get_frene(p0, u1, u2, v1))
     pf_frenes[0] = Frene(pf_frenes[1].t, pf_frenes[1].b, pf_frenes[1].n, np.array(blade[pfnum]["cx"][0]))
     pf_frenes.append(Frene(pf_frenes[-1].t, pf_frenes[-1].b, pf_frenes[-1].n, np.array(blade[pfnum]["cx"][-1])))
-    return pf_frenes if pfnum % 2 == 0 else pf_frenes[::-1]
+    return pf_frenes # if pfnum % 2 == 0 else pf_frenes[::-1]
 
 def generate_cx_dat(program_name: str, pf_prefix: str, path: list) -> None:
     n = len(path)
@@ -124,18 +117,27 @@ def generate_cx_src(program_name: str, pf_prefix: str, path: list) -> None:
         file.write("PTP {A1 0, A2 -90, A3 90, A4 0, A5 0, A6 0}")
         for i in range(n):
             file.write(f"\n\n; ### {pf_prefix}{i+1} ###\n")
-            file.write("SPLINE WITH $VEL= {CP 0.001, ORI1 0.001, ORI2 0.001}\n")
-            file.write(f"  SLIN {pf_prefix}{i+1}[{1}] WITH $VEL= {{CP 0.05, ORI1 0.05, ORI2 0.05}}\n")
-            for j in range(m-1):
-                file.write(f"  SPL {pf_prefix}{i+1}[{j+2}]\n")
-            file.write("ENDSPLINE")
+            file.write(f"PTP {pf_prefix}{i+1}[{1}]\n")
+            file.write("SPLINE WITH $VEL= {CP 0.007, ORI1 0.005, ORI2 0.005}\n")
+            file.write(f"  SPL {pf_prefix}{i+1}[{2}] WITH $VEL.CP = 0.01\n")
+            for j in range(m-3):
+                file.write(f"  SPL {pf_prefix}{i+1}[{j+3}]\n")
+            file.write(f"  SPL {pf_prefix}{i+1}[{m}] WITH $VEL.CP = 0.01\n")
+            file.write("ENDSPLINE\n\n")
+            file.write("$VEL.CP = 0.01\n")
+            file.write("LIN_REL {Z 10}") 
 
-### BEGIN ###
+def add_lead_points(blade: dict, airstripes_count: int, lead_dist: float) -> dict:
+    for i in range(airstripes_count):
+        blade[i]["cx"][0] = get_lead_point(blade[i]["cx"][1], blade[i]["cx"][2], lead_dist)
+        blade[i]["cx"][-1] = get_lead_point(blade[i]["cx"][-2], blade[i]["cx"][-3], lead_dist)
+    return blade
+
+
+################# BEGIN #################
 
 with open("99.01.25.242.json", 'r') as file:
     blade = json.load(file)
-
-# CONVEX #
 
 # L -> 0
 oT = np.array([1009.15, -16.49, 623.81])
@@ -145,9 +147,9 @@ zT = np.array([625.57, 623.52, 623.48, 622.35, 623.61, 622.86, 624.73, 624.40, 6
 [BELT_FRAME, AL0] = get_belt_frame(oT, xT, yT, zT)
 #print("BELT_FRAME:\n", "X: ", BELT_FRAME[0], "| Y: ", BELT_FRAME[1], "| Z: ", BELT_FRAME[2], "| A: ", BELT_FRAME[3], "| B: ", BELT_FRAME[4], "| C: ", BELT_FRAME[5])
 
-# i -> B
+lead_dist = 30
+airstripes_count = 3
 cx_frenes = []
-
 #[
 #    [Frene_11, Frene_12 ...]
 #    [Frene_21, Frene_22 ...]
@@ -155,11 +157,8 @@ cx_frenes = []
 #    [Frene_n1, Frene_n2 ...]
 #]
 
-for i in range(2):
-    blade[i]["cx"][0] = get_lead_point(blade[i]["cx"][1], blade[i]["cx"][2], 5)
-    blade[i]["cx"][-1] = get_lead_point(blade[i]["cx"][-2], blade[i]["cx"][-3], 5)
-
-cx_frenes = get_cx_frenes(blade, 2)
+blade = add_lead_points(blade, airstripes_count, lead_dist)
+cx_frenes = get_cx_frenes(blade, airstripes_count)
 
 # B -> F
 ABF = np.dot(translationMatrix([0.011, 0.047, 153.319]), rotationMatrix4x4(radians(-49), "z"))
@@ -188,26 +187,10 @@ for pf_frene in cx_frenes:
     #i = i + 1
     path.append(pf_path)
         
-rounded_path = np.round(np.array(path),3)
+rounded_path = np.round(np.array(path), 3)
 
 generate_cx_dat("convex_wheel", "A", rounded_path)
 generate_cx_src("convex_wheel", "A", rounded_path)
-
-'''
-i = 0
-for pf in rounded_path:
-    print(f"profile #{i}")
-    for p in pf:
-        print(    p)
-    i = i + 1
-'''
-
-
-'''
-def printFloatList(data, precision):
-    for i in range(len(data)):
-        print [f"%0.{precision}f" % i for i in a]
-'''
 
 '''
 ### BACKUP ###

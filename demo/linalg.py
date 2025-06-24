@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import sympy as sym
 import numpy as np
-from math import pi, sin, cos
+from math import pi, sin, cos, sqrt
 
 def rotationMatrix3x3(angle: float, axis: str) -> np.array:
     if (axis == "x"):
@@ -109,3 +109,22 @@ def points2plane(x, y, z) -> list:
     D = -DD*C
     
     return [A, B, C, D, AA, BB, DD]
+
+@dataclass
+class Circle:
+    center: np.array
+    radius: float
+
+def points2circ(pt1: np.array, pt2: np.array, pt3: np.array) -> Circle:
+    a1, b1 = pt1[0] - pt2[0], pt1[1] - pt2[1]
+    a2, b2 = pt1[0] - pt3[0], pt1[1] - pt3[1]
+    e1 = (pt2[0]**2 - pt1[0]**2) + (pt2[1]**2 - pt1[1]**2)
+    e2 = (pt3[0]**2 - pt1[0]**2) + (pt3[1]**2 - pt1[1]**2)
+    delta = a1 * b2 - a2 * b1
+    D = (e1 * b2 - e2 * b1) / delta
+    E = (a1 * e2 - a2 * e1) / delta
+    z = pt1[2]
+    ptc = np.array([-D/2, -E/2, z])
+    radius = sqrt((ptc[0] - pt1[0])**2 + (ptc[1] - pt1[1])**2)
+    return Circle(ptc, radius)
+
