@@ -73,24 +73,24 @@ def get_frene(p0: np.array, u1: np.array, u2: np.array, v1: np.array) -> Frene:
     return Frene(tanu, binorm, norm, p0)
 
 # CX - BEGIN
-def get_cx_frenes(blade: dict, airstripes_count: int) -> list:
+def get_cx_frenes(blade: dict, pf_num_begin: int, pf_num_end: int) -> list:
     frenes = []
-    for i in range(airstripes_count):
+    for i in range(pf_num_begin, pf_num_end):
         frenes.append(get_cx_airstripe_frenes(blade, i))
     return frenes
 
-def get_cx_airstripe_frenes(blade: dict, pfnum: int) -> list:
+def get_cx_airstripe_frenes(blade: dict, pf_num: int) -> list:
     pf_frenes = [Frene()]
-    npt = len(blade[pfnum]["cx"])
+    npt = len(blade[pf_num]["cx"])
     for ptnum in range(1, npt-1):
-        p0 = np.array(blade[pfnum]["cx"][ptnum])
-        u1 = np.array(blade[pfnum]["cx"][ptnum-1])
-        u2 = np.array(blade[pfnum]["cx"][ptnum+1])   
-        v1 = np.array(blade[pfnum+1]["cx"][ptnum])
+        p0 = np.array(blade[pf_num]["cx"][ptnum])
+        u1 = np.array(blade[pf_num]["cx"][ptnum-1])
+        u2 = np.array(blade[pf_num]["cx"][ptnum+1])   
+        v1 = np.array(blade[pf_num+1]["cx"][ptnum])
         pf_frenes.append(get_frene(p0, u1, u2, v1))
-    pf_frenes[0] = Frene(pf_frenes[1].t, pf_frenes[1].b, pf_frenes[1].n, np.array(blade[pfnum]["cx"][0]))
-    pf_frenes.append(Frene(pf_frenes[-1].t, pf_frenes[-1].b, pf_frenes[-1].n, np.array(blade[pfnum]["cx"][-1])))
-    return pf_frenes # if pfnum % 2 == 0 else pf_frenes[::-1]
+    pf_frenes[0] = Frene(pf_frenes[1].t, pf_frenes[1].b, pf_frenes[1].n, np.array(blade[pf_num]["cx"][0]))
+    pf_frenes.append(Frene(pf_frenes[-1].t, pf_frenes[-1].b, pf_frenes[-1].n, np.array(blade[pf_num]["cx"][-1])))
+    return pf_frenes
 
 def generate_cx_dat(program_name: str, pf_prefix: str, path: list) -> None:
     n = len(path)
@@ -109,12 +109,8 @@ def generate_cx_src(program_name: str, pf_prefix: str, path: list) -> None:
     n = len(path)
     m = len(path[0])
     with open(f"{program_name}.src", 'w') as file:
-        file.write(f"DEF {program_name}()\n")
-        file.write("INI\n\n")
-        file.write("PTP HOME Vel=100% DEFAULT\n\n")
         file.write("$BASE = BASE_DATA[3]\n")
         file.write("$TOOL = TOOL_DATA[2]\n\n")
-        file.write("PTP {A1 0, A2 -90, A3 90, A4 0, A5 0, A6 0}")
         for i in range(n):
             file.write(f"\n\n; ### {pf_prefix}{i+1} ###\n")
             file.write(f"PTP {pf_prefix}{i+1}[{1}]\n")
@@ -163,7 +159,8 @@ cx_frenes = get_cx_frenes(blade, airstripes_count)
 # B -> F
 ABF = np.dot(translationMatrix([0.011, 0.047, 153.319]), rotationMatrix4x4(radians(-49), "z"))
 # i -> T
-AiL = np.array([[-1.,0.,0.,0.],[0.,1.,0.,0.],[0.,0.,-1.,0.],[0.,0.,0.,1.]])
+# AiL = np.array([[-1.,0.,0.,0.],[0.,1.,0.,0.],[0.,0.,-1.,0.],[0.,0.,0.,1.]]) # BELT
+AiL = np.array([[0.,-1.,0.,0.],[-1.,0.,0.,0.],[0.,0.,-1.,0.],[0.,0.,0.,1.]]) # WHEEL
 
 ABTs = []
 path = []

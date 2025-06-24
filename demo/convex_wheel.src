@@ -1,8 +1,3 @@
-DEF convex_wheel()
-INI
-
-PTP HOME Vel=100% DEFAULT
-
 $BASE = BASE_DATA[3]
 $TOOL = TOOL_DATA[2]
 
