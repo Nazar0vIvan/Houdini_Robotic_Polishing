@@ -49,14 +49,13 @@ def get_belt_frame(orig: np.array, x: np.array, y: np.array, z: np.array):
 
 ### BLADE ### 
 
-def get_lead_point(pt1: list, pt2: list, dist: float) -> np.ndarray:
+def get_lead_point(pt1: np.array, pt2: np.array, dist: float) -> np.ndarray:
     #pt1 - the last point of cx/cv
     #pt2 - the point before the last of cx/cv
-    pt1 = np.array(pt1)
-    pt2 = np.array(pt2)
-    v21 = pt1 - pt2
-    v13 = dist/np.linalg.norm(v21)*v21
-    return list(np.round(pt1 + v13, 3))
+    v = pt1 - pt2
+    magnitude = np.linalg.norm(v)
+    unit_v = v / magnitude
+    return list(np.round(pt1 + unit_v * dist, 3))
 
 def get_frene(p0: np.array, u1: np.array, u2: np.array, v1: np.array) -> Frene:
     a0,a1,a2,t = sym.symbols('a0 a1 a2 t')
@@ -96,37 +95,36 @@ def generate_cx_dat(program_name: str, pf_prefix: str, path: list) -> None:
     n = len(path)
     m = len(path[0])
     with open(f"{program_name}.dat", 'w') as file:
-        file.write(f"DEFDAT {program_name}\n")
-        file.write("EXTERNAL DECLARATION")
         for i in range(n):
             file.write(f"\n\n; ### {pf_prefix}{i+1} ###\n\n")
             file.write(f"DECL POS {pf_prefix}{i+1}[{m}]\n\n")
             for j, pos in enumerate(path[i]):
                 file.write(f"{pf_prefix}{i+1}[{j+1}] = {{X {pos[0]}, Y {pos[1]}, Z {pos[2]}, A {pos[3]}, B {pos[4]}, C {pos[5]}}}\n")
-        file.write("ENDDAT")
         
 def generate_cx_src(program_name: str, pf_prefix: str, path: list) -> None:
     n = len(path)
     m = len(path[0])
     with open(f"{program_name}.src", 'w') as file:
         file.write("$BASE = BASE_DATA[3]\n")
-        file.write("$TOOL = TOOL_DATA[2]\n\n")
+        file.write("$TOOL = TOOL_DATA[2]\n")
+        file.write("PTP {A4 90, A5 -90}")
         for i in range(n):
             file.write(f"\n\n; ### {pf_prefix}{i+1} ###\n")
             file.write(f"PTP {pf_prefix}{i+1}[{1}]\n")
             file.write("SPLINE WITH $VEL= {CP 0.007, ORI1 0.005, ORI2 0.005}\n")
-            file.write(f"  SPL {pf_prefix}{i+1}[{2}] WITH $VEL.CP = 0.01\n")
+            file.write(f"  SLIN {pf_prefix}{i+1}[{2}] WITH $VEL.CP = 0.01\n")
             for j in range(m-3):
                 file.write(f"  SPL {pf_prefix}{i+1}[{j+3}]\n")
             file.write(f"  SPL {pf_prefix}{i+1}[{m}] WITH $VEL.CP = 0.01\n")
             file.write("ENDSPLINE\n\n")
-            file.write("$VEL.CP = 0.01\n")
-            file.write("LIN_REL {Z 10}") 
+            file.write("$VEL.CP = 0.07\n")
+            file.write("LIN_REL {Z 400}") if (i == n-1) else file.write("LIN_REL {Z 20}")
+        
 
-def add_lead_points(blade: dict, airstripes_count: int, lead_dist: float) -> dict:
-    for i in range(airstripes_count):
-        blade[i]["cx"][0] = get_lead_point(blade[i]["cx"][1], blade[i]["cx"][2], lead_dist)
-        blade[i]["cx"][-1] = get_lead_point(blade[i]["cx"][-2], blade[i]["cx"][-3], lead_dist)
+def add_lead_points(blade: dict, lead_dist: float) -> dict:
+    for pf in blade:
+        pf["cx"][0] = get_lead_point(np.array(pf["cx"][1]), np.array(pf["cx"][2]), lead_dist)
+        pf["cx"][-1] = get_lead_point(np.array(pf["cx"][-2]), np.array(pf["cx"][-3]), lead_dist)
     return blade
 
 
@@ -143,24 +141,22 @@ zT = np.array([625.57, 623.52, 623.48, 622.35, 623.61, 622.86, 624.73, 624.40, 6
 [BELT_FRAME, AL0] = get_belt_frame(oT, xT, yT, zT)
 #print("BELT_FRAME:\n", "X: ", BELT_FRAME[0], "| Y: ", BELT_FRAME[1], "| Z: ", BELT_FRAME[2], "| A: ", BELT_FRAME[3], "| B: ", BELT_FRAME[4], "| C: ", BELT_FRAME[5])
 
-lead_dist = 30
-airstripes_count = 3
+lead_dist = 60
 cx_frenes = []
+
 #[
 #    [Frene_11, Frene_12 ...]
 #    [Frene_21, Frene_22 ...]
 #    ...
 #    [Frene_n1, Frene_n2 ...]
 #]
-
-blade = add_lead_points(blade, airstripes_count, lead_dist)
-cx_frenes = get_cx_frenes(blade, airstripes_count)
+cx_frenes = get_cx_frenes(add_lead_points(blade, lead_dist), 2, 3)
 
 # B -> F
 ABF = np.dot(translationMatrix([0.011, 0.047, 153.319]), rotationMatrix4x4(radians(-49), "z"))
 # i -> T
-# AiL = np.array([[-1.,0.,0.,0.],[0.,1.,0.,0.],[0.,0.,-1.,0.],[0.,0.,0.,1.]]) # BELT
-AiL = np.array([[0.,-1.,0.,0.],[-1.,0.,0.,0.],[0.,0.,-1.,0.],[0.,0.,0.,1.]]) # WHEEL
+AiL = np.array([[-1.,0.,0.,0.],[0.,1.,0.,0.],[0.,0.,-1.,0.],[0.,0.,0.,1.]]) # BELT
+#AiL = np.array([[0.,-1.,0.,0.],[-1.,0.,0.,0.],[0.,0.,-1.,0.],[0.,0.,0.,1.]]) # WHEEL
 
 ABTs = []
 path = []
@@ -170,6 +166,7 @@ for pf_frene in cx_frenes:
     #j = 0
     for frene in pf_frene:
         ABT = np.dot(AiL, np.linalg.inv(frene.transf))
+        print(ABT)
         ABTs.append(ABT)
         euler = rot2euler(ABT, True)
         A = euler.get('A1')
