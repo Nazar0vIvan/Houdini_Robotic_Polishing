@@ -2,60 +2,51 @@ import numpy as np
 import json
 from linalg import *
 from diffgeom import *
-from math import radians
 
-np.set_printoptions(suppress=True)
-np.set_printoptions(precision=3)
+################# BELT {L} #################
 
-### BELT {L} ###
+# L - BELT: belt frame - t, b, n
+def get_belt_frame(o: np.ndarray, x: np.ndarray, y: np.ndarray, z: np.ndarray):
+    [A, B, C] = points2plane(x, y, z)
 
-def get_belt_frame(orig: np.array, x: np.array, y: np.array, z: np.array):
-    # T - TOOL: belt - tau, beta, nu
+    n = np.array([A, B, C]) # belt z - n
+    n = n / np.linalg.norm(n)
 
-    [A, B, C, D, AA, BB, DD] = points2plane(x, y, z)
+    x0 = np.array([1, 0, 0]) # X0 axis unit vector
+    t = x0 - np.dot(x0, n) * n # belt x - t
+    t = -t / np.linalg.norm(t)
 
-    # belt normal - z
-    nu = np.array([A, B, C])
+    b = np.cross(n, t) # belt y - b
 
-    # belt tau - x
-    tau_xend = orig[0]-40
-    tau_yend = orig[1]
-    tau_zend = AA*(tau_xend) + BB*(tau_yend) + DD
-    tau_end = np.array([tau_xend, tau_yend, tau_zend])
-    tau = tau_end - orig
-    mtau = np.linalg.norm(tau)
-    tau=tau/mtau
-
-    # belt beta - y
-    beta = np.cross(nu,tau)
-
-    # euler
-    tau = tau.reshape((-1,1))
-    beta = beta.reshape((-1,1))
-    nu = nu.reshape((-1,1))
-    RL0 = np.hstack((tau, np.hstack((beta,nu)))) # rotation matrix from belt frame to robot base frame
-
-    A = np.degrees(np.arctan2(RL0[1,0],RL0[0,0]))
-    B = np.degrees(np.arcsin(-RL0[2,0]))
-    C = np.degrees(np.arctan2(RL0[2,1],RL0[2,2]))
-    frame = np.array([orig[0], orig[1], orig[2], A, B, C])
-
-    # matrix AT0
-    AL0 = RL0
-    AL0 = np.append(RL0, orig.reshape((-1,1)), axis=1)
-    AL0 = np.vstack((AL0, np.array([0,0,0,1])))
+    AL0 = np.eye(4, dtype=np.float64)
+    AL0[:3, 0] = t
+    AL0[:3, 1] = b
+    AL0[:3, 2] = n
+    AL0[:3, 3] = o
+    
+    eulerA = np.degrees(np.arctan2(AL0[1,0], AL0[0,0]))
+    eulerB = np.degrees(np.arcsin(-AL0[2,0]))
+    eulerC = np.degrees(np.arctan2(AL0[2,1], AL0[2,2]))
+    frame = np.append(o, [eulerA, eulerB, eulerC])
 
     return [frame, AL0]
 
-### BLADE ### 
+################# BLADE ################# 
 
-def get_lead_point(pt1: np.array, pt2: np.array, dist: float) -> np.ndarray:
+def get_lead_point(pt1: np.ndarray, pt2: np.ndarray, dist: float) -> np.ndarray:
     #pt1 - the last point of cx/cv
     #pt2 - the point before the last of cx/cv
     v = pt1 - pt2
     magnitude = np.linalg.norm(v)
     unit_v = v / magnitude
-    return list(np.round(pt1 + unit_v * dist, 3))
+    return np.round(pt1 + unit_v * dist, 3)
+
+def add_lead_points(blade: dict, lead_dist: float) -> dict:
+    for pf in blade:
+        pf["cx"][0] = get_lead_point(np.array(pf["cx"][1]), np.array(pf["cx"][2]), lead_dist)
+        pf["cx"][-1] = get_lead_point(np.array(pf["cx"][-2]), np.array(pf["cx"][-3]), lead_dist)
+    return blade
+
 
 def get_frene(p0: np.array, u1: np.array, u2: np.array, v1: np.array) -> Frene:
     a0,a1,a2,t = sym.symbols('a0 a1 a2 t')
@@ -65,13 +56,12 @@ def get_frene(p0: np.array, u1: np.array, u2: np.array, v1: np.array) -> Frene:
     tanu = vecfun_u.tangent_val(p0[0], coeffs_u)
     if(tanu[0] < 0): tanu = -1*tanu
     tanv = v1 - p0
-    normalized_tanv = tanv/np.linalg.norm(tanv)
-    norm = np.cross(tanu, normalized_tanv)
-    normalized_norm = norm/np.linalg.norm(norm)
-    binorm = np.cross(normalized_norm, tanu)
+    tanv = tanv/np.linalg.norm(tanv)
+    norm = np.cross(tanu, tanv)
+    norm = norm/np.linalg.norm(norm)
+    binorm = np.cross(norm, tanu)
     return Frene(tanu, binorm, norm, p0)
 
-# CX - BEGIN
 def get_cx_frenes(blade: dict, pf_num_begin: int, pf_num_end: int) -> list:
     frenes = []
     for i in range(pf_num_begin, pf_num_end):
@@ -119,39 +109,36 @@ def generate_cx_src(program_name: str, pf_prefix: str, path: list) -> None:
             file.write("ENDSPLINE\n\n")
             file.write("$VEL.CP = 0.07\n")
             file.write("LIN_REL {Z 400}") if (i == n-1) else file.write("LIN_REL {Z 20}")
-        
 
-def add_lead_points(blade: dict, lead_dist: float) -> dict:
-    for pf in blade:
-        pf["cx"][0] = get_lead_point(np.array(pf["cx"][1]), np.array(pf["cx"][2]), lead_dist)
-        pf["cx"][-1] = get_lead_point(np.array(pf["cx"][-2]), np.array(pf["cx"][-3]), lead_dist)
-    return blade
-
-
+#########################################
 ################# BEGIN #################
+#########################################
 
-with open("99.01.25.242.json", 'r') as file:
-    blade = json.load(file)
-
-# L -> 0
+# BELT_FRAME: L -> 0
 oT = np.array([1009.15, -16.49, 623.81])
 xT = np.array([996.14, 1010.89, 1010.89, 1023.99, 1014.15, 1014.15, 1004.89, 1004.89, 1009.15])
 yT = np.array([-16.14, -29.24, 0.92, -16.14, -10.54, -22.95, -22.21, -10.51, -16.49])
 zT = np.array([625.57, 623.52, 623.48, 622.35, 623.61, 622.86, 624.73, 624.40, 623.81])
 [BELT_FRAME, AL0] = get_belt_frame(oT, xT, yT, zT)
-#print("BELT_FRAME:\n", "X: ", BELT_FRAME[0], "| Y: ", BELT_FRAME[1], "| Z: ", BELT_FRAME[2], "| A: ", BELT_FRAME[3], "| B: ", BELT_FRAME[4], "| C: ", BELT_FRAME[5])
 
+with open("99.01.25.242.json", 'r') as file:
+    blade = json.load(file)
+
+# PARAMS
 lead_dist = 60
-cx_frenes = []
+#
 
-#[
-#    [Frene_11, Frene_12 ...]
-#    [Frene_21, Frene_22 ...]
-#    ...
-#    [Frene_n1, Frene_n2 ...]
-#]
-cx_frenes = get_cx_frenes(add_lead_points(blade, lead_dist), 2, 3)
+blade = add_lead_points(blade, lead_dist)
+cx_frenes = get_cx_frenes(blade, 2, 3)
 
+# [
+#   [Frene_11, Frene_12 ...]
+#   [Frene_21, Frene_22 ...]
+#   ...
+#   [Frene_n1, Frene_n2 ...]
+# ]
+
+'''
 # B -> F
 ABF = np.dot(translationMatrix([0.011, 0.047, 153.319]), rotationMatrix4x4(radians(-49), "z"))
 # i -> T
@@ -166,7 +153,7 @@ for pf_frene in cx_frenes:
     #j = 0
     for frene in pf_frene:
         ABT = np.dot(AiL, np.linalg.inv(frene.transf))
-        print(ABT)
+        #print(ABT)
         ABTs.append(ABT)
         euler = rot2euler(ABT, True)
         A = euler.get('A1')
@@ -185,6 +172,7 @@ rounded_path = np.round(np.array(path), 3)
 
 generate_cx_dat("convex_wheel", "A", rounded_path)
 generate_cx_src("convex_wheel", "A", rounded_path)
+'''
 
 '''
 ### BACKUP ###
