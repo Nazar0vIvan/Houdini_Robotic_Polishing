@@ -7,7 +7,7 @@ from diffgeom import *
 
 # L - BELT: belt frame - t, b, n
 def get_belt_frame(o: np.ndarray, x: np.ndarray, y: np.ndarray, z: np.ndarray):
-    [A, B, C] = points2plane(x, y, z)
+    [A, B, C, D, AA, BB, DD] = points2plane(x, y, z)
 
     n = np.array([A, B, C]) # belt z - n
     n = n / np.linalg.norm(n)
@@ -18,18 +18,18 @@ def get_belt_frame(o: np.ndarray, x: np.ndarray, y: np.ndarray, z: np.ndarray):
 
     b = np.cross(n, t) # belt y - b
 
-    AL0 = np.eye(4, dtype=np.float64)
-    AL0[:3, 0] = t
-    AL0[:3, 1] = b
-    AL0[:3, 2] = n
-    AL0[:3, 3] = o
+    transform = np.eye(4, dtype=np.float64)
+    transform[:3, 0] = t
+    transform[:3, 1] = b
+    transform[:3, 2] = n
+    transform[:3, 3] = o
     
-    eulerA = np.degrees(np.arctan2(AL0[1,0], AL0[0,0]))
-    eulerB = np.degrees(np.arcsin(-AL0[2,0]))
-    eulerC = np.degrees(np.arctan2(AL0[2,1], AL0[2,2]))
+    eulerA = np.degrees(np.arctan2(transform[1,0], transform[0,0]))
+    eulerB = np.degrees(np.arcsin(-transform[2,0]))
+    eulerC = np.degrees(np.arctan2(transform[2,1], transform[2,2]))
     frame = np.append(o, [eulerA, eulerB, eulerC])
 
-    return [frame, AL0]
+    return [frame, transform]
 
 ################# BLADE ################# 
 
@@ -110,6 +110,22 @@ def generate_cx_src(program_name: str, pf_prefix: str, path: list) -> None:
             file.write("$VEL.CP = 0.07\n")
             file.write("LIN_REL {Z 400}") if (i == n-1) else file.write("LIN_REL {Z 20}")
 
+
+def get_cx_path(cx_frenes: np.ndarray, AiL: np.ndarray):
+    ABTs = []; path = []
+    for pf_frene in cx_frenes:
+        pf_path = []
+        for frene in pf_frene:
+            ABT = np.dot(AiL, np.linalg.inv(frene.transf))
+            ABTs.append(ABT)     
+            X, Y, Z = ABT[:3, 3]
+            euler = rot2euler(ABT, True)
+            A = euler['A1']; B = euler['B1']; C = euler['C1']
+            pf_path.append([X, Y, Z, A, B, C])
+        path.append(pf_path)
+    return ABTs, path
+
+
 #########################################
 ################# BEGIN #################
 #########################################
@@ -121,16 +137,11 @@ yT = np.array([-16.14, -29.24, 0.92, -16.14, -10.54, -22.95, -22.21, -10.51, -16
 zT = np.array([625.57, 623.52, 623.48, 622.35, 623.61, 622.86, 624.73, 624.40, 623.81])
 [BELT_FRAME, AL0] = get_belt_frame(oT, xT, yT, zT)
 
+np.set_printoptions(formatter={'float': '{:.3f}'.format})
+print("BELT_FRAME:\n", "X: ", BELT_FRAME[0], "| Y: ", BELT_FRAME[1], "| Z: ", BELT_FRAME[2], "| A: ", BELT_FRAME[3], "| B: ", BELT_FRAME[4], "| C: ", BELT_FRAME[5])
+
 with open("99.01.25.242.json", 'r') as file:
     blade = json.load(file)
-
-# PARAMS
-lead_dist = 60
-#
-
-blade = add_lead_points(blade, lead_dist)
-cx_frenes = get_cx_frenes(blade, 2, 3)
-
 # [
 #   [Frene_11, Frene_12 ...]
 #   [Frene_21, Frene_22 ...]
@@ -138,41 +149,23 @@ cx_frenes = get_cx_frenes(blade, 2, 3)
 #   [Frene_n1, Frene_n2 ...]
 # ]
 
-'''
 # B -> F
-ABF = np.dot(translationMatrix([0.011, 0.047, 153.319]), rotationMatrix4x4(radians(-49), "z"))
+ABF = np.dot(translationMatrix([0.011, 0.047, 153.319]), rotationMatrix4x4(np.radians(-49), "z"))
+
 # i -> T
-AiL = np.array([[-1.,0.,0.,0.],[0.,1.,0.,0.],[0.,0.,-1.,0.],[0.,0.,0.,1.]]) # BELT
-#AiL = np.array([[0.,-1.,0.,0.],[-1.,0.,0.,0.],[0.,0.,-1.,0.],[0.,0.,0.,1.]]) # WHEEL
+#AiL = np.array([[-1.,0.,0.,0.],[0.,1.,0.,0.],[0.,0.,-1.,0.],[0.,0.,0.,1.]]) # BELT
+AiL = np.array([[0.,-1.,0.,0.],[-1.,0.,0.,0.],[0.,0.,-1.,0.],[0.,0.,0.,1.]]) # WHEEL
 
-ABTs = []
-path = []
-#i = 0; j = 0
-for pf_frene in cx_frenes:
-    pf_path = []
-    #j = 0
-    for frene in pf_frene:
-        ABT = np.dot(AiL, np.linalg.inv(frene.transf))
-        #print(ABT)
-        ABTs.append(ABT)
-        euler = rot2euler(ABT, True)
-        A = euler.get('A1')
-        B = euler.get('B1')
-        C = euler.get('C1')
-        X = ABT[0][3]
-        Y = ABT[1][3]
-        Z = ABT[2][3]
-        pf_path.append([X,Y,Z,A,B,C])
-        #print(f"{i}|{j}: ", np.around(trajectory[-1], decimals=2))
-        #j = j + 1
-    #i = i + 1
-    path.append(pf_path)
-        
-rounded_path = np.round(np.array(path), 3)
+lead_dist = 60
+blade = add_lead_points(blade, lead_dist)
+cx_frenes = get_cx_frenes(blade, 2, 3)
 
-generate_cx_dat("convex_wheel", "A", rounded_path)
-generate_cx_src("convex_wheel", "A", rounded_path)
-'''
+cx_path = get_cx_path(cx_frenes, AiL)
+rounded_cx_path = np.round(np.array(cx_path), 3)
+
+generate_cx_dat("convex_wheel", "A", rounded_cx_path)
+generate_cx_src("convex_wheel", "A", rounded_cx_path)
+
 
 '''
 ### BACKUP ###
