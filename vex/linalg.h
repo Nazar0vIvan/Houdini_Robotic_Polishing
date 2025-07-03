@@ -96,6 +96,11 @@ function int[] linspace(int x1; int x2; int is_end) {
     return res;
 }
 
+int isOppositePoints(vector p1, p2, pt1, pt2) {
+    vector v = p2 - p1;
+    return dot(cross(v, pt1 - p1), cross(v, pt2 - p1)) < 0;
+}
+
 function void removepoints(int geohandle; int point_numbers[]) {
     foreach(int ptnum; point_numbers) removepoint(geohandle, ptnum);
 }
