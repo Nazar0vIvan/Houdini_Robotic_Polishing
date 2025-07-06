@@ -76,13 +76,43 @@ def get_cx_frenes(blade: dict, pf_num_begin: int, pf_num_end: int) -> list:
 def get_cx_airstripe_frenes(blade: dict, pf_num: int) -> list:
     pf_frenes = []
     npt = len(blade[pf_num]["cx"])
+    # first cx point    [0]  - last  "re" point 
+    # second cx point   [1]  - first "cx" point
+    # last cx point     [-1] - first "le" point
+    # pre-last cx point [-2] - last  "cx" point
+    p0 = np.array(blade[pf_num]["cx"][0])
+    u1 = np.array(blade[pf_num]["re"][-1])
+    u2 = np.array(blade[pf_num]["cx"][1]) 
+    v1 = np.array(blade[pf_num+1]["cx"][0])
+    pf_frenes.append(get_frene(p0, u1, u2, v1))
     for ptnum in range(1, npt-1):
         p0 = np.array(blade[pf_num]["cx"][ptnum])
         u1 = np.array(blade[pf_num]["cx"][ptnum-1])
         u2 = np.array(blade[pf_num]["cx"][ptnum+1])   
         v1 = np.array(blade[pf_num+1]["cx"][ptnum])
         pf_frenes.append(get_frene(p0, u1, u2, v1))
+    # last cx-point frene 
+    p0 = np.array(blade[pf_num]["cx"][-1])
+    u1 = np.array(blade[pf_num]["le"][0])
+    u2 = np.array(blade[pf_num]["cx"][-2])
+    v1 = np.array(blade[pf_num+1]["cx"][-1])
+    pf_frenes.append(get_frene(p0, u1, u2, v1))
     return pf_frenes
+
+def get_cx_path(cx_frenes: np.ndarray, AiL: np.ndarray, isReversed = False):
+    ABTs = []; path = []
+    for pf_frene in cx_frenes:
+        pf_path = [np.array([0.,0.,0.,0.,0.,0.])]
+        for frene in pf_frene:
+            ABT = np.dot(AiL, np.linalg.inv(frene.transf))
+            ABTs.append(ABT)     
+            X, Y, Z = ABT[:3, 3]
+            euler = rot2euler(ABT, True)
+            A = euler['A1']; B = euler['B1']; C = euler['C1']
+            pf_path.append(np.array([X, Y, Z, A, B, C]))
+        pf_path.append(np.array([0.,0.,0.,0.,0.,0.]))
+        path.append(pf_path[::-1] if isReversed else pf_path)
+    return path, ABTs
 
 def generate_cx_dat(program_name: str, pf_prefix: str, path: list) -> None:
     n = len(path)
@@ -114,21 +144,13 @@ def generate_cx_src(program_name: str, pf_prefix: str, path: list) -> None:
             file.write("LIN_REL {Z 400}") if (i == n-1) else file.write("LIN_REL {Z 20}")
 
 
-def get_cx_path(cx_frenes: np.ndarray, AiL: np.ndarray, isReversed = False):
-    ABTs = []; path = []
-    for pf_frene in cx_frenes:
-        pf_path = [np.array([0.,0.,0.,0.,0.,0.])]
-        for frene in pf_frene:
-            ABT = np.dot(AiL, np.linalg.inv(frene.transf))
-            ABTs.append(ABT)     
-            X, Y, Z = ABT[:3, 3]
-            euler = rot2euler(ABT, True)
-            A = euler['A1']; B = euler['B1']; C = euler['C1']
-            pf_path.append(np.array([X, Y, Z, A, B, C]))
-        pf_path.append(np.array([0.,0.,0.,0.,0.,0.]))
-        path.append(pf_path[::-1] if isReversed else pf_path)
-    return path, ABTs
-
+def print_flattened_array(arr):
+    # Flatten the array and convert to list
+    flattened = arr.flatten().tolist()
+    # Format each number to 3 decimal places
+    formatted = [round(num, 3) if not num.is_integer() else int(num) if num == int(num) else num for num in flattened]
+    # Print in the desired format
+    print(formatted)
 
 #########################################
 ################# BEGIN #################
@@ -161,7 +183,8 @@ ABF = np.dot(translationMatrix([0.011, 0.047, 153.319]), rotationMatrix4x4(np.ra
 AiL = np.array([[0.,-1.,0.,0.],[-1.,0.,0.,0.],[0.,0.,-1.,0.],[0.,0.,0.,1.]]) # WHEEL
 
 
-cx_frenes = get_cx_frenes(blade, 2, 3)
+cx_frenes = get_cx_frenes(blade, 0, 1)
+print_flattened_array(cx_frenes[0][-1].transf)
 cx_path, cx_ABTs = get_cx_path(cx_frenes, AiL, True)
 
 lead_dist = 20
@@ -172,8 +195,10 @@ cx_path = add_cx_lead_points(cx_path, lead_dist)
 
 rounded_cx_path = np.round(np.array(cx_path), 3)
 
-generate_cx_dat("convex_wheel", "A", rounded_cx_path)
-generate_cx_src("convex_wheel", "A", rounded_cx_path)
+
+
+#generate_cx_dat("convex_wheel", "A", rounded_cx_path)
+#generate_cx_src("convex_wheel", "A", rounded_cx_path)
 
 '''
 ### BACKUP ###
