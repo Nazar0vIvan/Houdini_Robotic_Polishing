@@ -16,7 +16,7 @@ function int[] addCirc(Circle circ; int n; int inOnlyPoints) {
         pt = pc + set(cos(angle), sin(angle), 0) * r;
         append(pt_nums, addpoint(0, pt));
     }
-    if (inOnlyPoints) addprim(0, "polyline", pts);
+    if (inOnlyPoints) addprim(0, "polyline", pt_nums);
     return pt_nums;
 }
 

@@ -1,13 +1,13 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import numpy as np
 
 @dataclass
 class Frene:
-    t: np.ndarray = np.array([[],[],[]])
-    b: np.ndarray = np.array([[],[],[]])
-    n: np.ndarray = np.array([[],[],[]])
-    p: np.ndarray = np.array([[],[],[]])
-    transf: np.ndarray = None
+    t: np.ndarray = field(default_factory=lambda: np.array([[],[],[]]))
+    b: np.ndarray = field(default_factory=lambda: np.array([[],[],[]]))
+    n: np.ndarray = field(default_factory=lambda: np.array([[],[],[]]))
+    p: np.ndarray = field(default_factory=lambda: np.array([[],[],[]]))
+    transf: np.ndarray = field(init=False)
 
     def __post_init__(self):
         self.transf = np.column_stack((np.append(self.t, 0.), np.append(self.b, 0.), np.append(self.n, 0.), np.append(self.p, 1.)))        

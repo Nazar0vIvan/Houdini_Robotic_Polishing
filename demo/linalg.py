@@ -112,10 +112,19 @@ def points2plane(x, y, z) -> list:
 
 @dataclass
 class Circle:
-    center: np.array
+    center: np.ndarray
     radius: float
 
 def points2circ(pt1: np.array, pt2: np.array, pt3: np.array) -> Circle:
+    a, b, c = pt1[:2], pt2[:2], pt3[:2]
+    A = np.vstack([2*(b-a), 2*(c-a)])
+    rhs = np.array([b@b - a@a, c@c - a@a])
+    center_xy = np.linalg.solve(A, rhs)
+    return Circle(
+        center=np.append(center_xy, pt1[2]),
+        radius=np.linalg.norm(center_xy - a)
+    )
+    '''
     a1, b1 = pt1[0] - pt2[0], pt1[1] - pt2[1]
     a2, b2 = pt1[0] - pt3[0], pt1[1] - pt3[1]
     e1 = (pt2[0]**2 - pt1[0]**2) + (pt2[1]**2 - pt1[1]**2)
@@ -127,4 +136,5 @@ def points2circ(pt1: np.array, pt2: np.array, pt3: np.array) -> Circle:
     ptc = np.array([-D/2, -E/2, z])
     radius = sqrt((ptc[0] - pt1[0])**2 + (ptc[1] - pt1[1])**2)
     return Circle(ptc, radius)
+    '''
 
